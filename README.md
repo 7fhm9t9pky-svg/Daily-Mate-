@@ -175,3 +175,7 @@ Toccando "Apri chat e condivisi" si apre la pagina del gruppo: prima la **chat l
 - **Formule collegate**: per gli utenti le formule che dipendono da altre celle sono bloccate: nel modulo il campo è vuoto e non modificabile ("Calcolato automaticamente"). L'amministratore le vede e le modifica.
 - **Home banking** (utenti): niente "Altre banche" e "Banca prioritaria": si sostituiscono con le sottopagine ("＋ Nuova sottopagina"). **Investimenti aperti** (utenti): senza "Famiglia".
 - **Anni** in Amministrazione (Annuale, fino a 23 anni) e in Entrate e uscite (fino a 16): "+ Aggiungi anno", si tolgono toccando la riga e "Elimina"; gli anni sono ordinati e i totali si calcolano da soli.
+
+## Disconnessione automatica e ruolo Visitatore
+- **Disconnessione**: dopo 3 minuti senza toccare, scrivere o scorrere, ogni utente viene disconnesso (negli ultimi 20 secondi compare l'avviso con "Resto qui"). Le modifiche in corso vengono salvate prima di uscire.
+- **Ruoli** (solo il proprietario li cambia, da Amministrazione → utente → Permessi): **Utente** (normale) e **Visitatore** (ha la pagina Amministrazione: personalizza l'interfaccia degli utenti normali e invia notifiche, ma vede Finanze come un utente normale, senza i dati personali del proprietario; non può modificare il proprietario, gli altri visitatori o i ruoli, né gli aggiornamenti del server).

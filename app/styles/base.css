@@ -276,3 +276,4 @@ svg circle{fill:var(--acc)}
 .te-l{flex:1.4}.te-v{flex:1}
 .te-x{border:0;background:none;color:var(--neg);font-size:16px;cursor:pointer;padding:0 6px}
 .modal select,.modal .fl input[type=text]{width:100%}
+.idle-bar{bottom:76px}

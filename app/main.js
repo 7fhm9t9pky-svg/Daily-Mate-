@@ -13,6 +13,7 @@ import { ActivityModule } from './modules/activity/ActivityModule.js';
 import { AdminModule } from './modules/admin/AdminModule.js';
 import { Notifier } from './core/Notifier.js';
 import { UpdateWatcher } from './core/UpdateWatcher.js';
+import { IdleLogout } from './core/IdleLogout.js';
 import { SettingsModule } from './modules/settings/SettingsModule.js';
 
 // Frontend e API sono serviti dallo stesso server (vedi /server): stessa origine, niente CORS.
@@ -41,5 +42,6 @@ function boot() {
   new UpdateWatcher().start();
   app.notifier = new Notifier(app);
   app.notifier.start();
+  app.idle = new IdleLogout(app); app.idle.start();                  // fuori dopo 3 minuti di inattività
   window.dailyMate = app; // comodo per il debug dalla console del browser
 }

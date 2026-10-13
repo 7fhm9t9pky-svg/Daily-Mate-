@@ -126,7 +126,7 @@ export class ActivityModule extends Module {
 
   /** Aggiunge (def = null) o modifica un grafico. */
   async edit(def) {
-    const list = await this.list(), admin = this.app.isAdmin?.();
+    const list = await this.list(), admin = this.app.isOwner?.();
     let kind = def?.kind;
     if (!def) {
       const first = await FormModal.open({ title: 'Nuovo grafico', fields: [{ key: 'kind', label: 'Da dove prendo i dati?', type: 'select', options: KINDS(admin) }], values: { kind: 'manual' } });

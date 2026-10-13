@@ -229,7 +229,7 @@ export class SheetView extends Component {
 
   /** Per gli utenti le formule che dipendono da altre celle sono bloccate e invisibili (non per l'amministratore, non nelle loro pagine). */
   #locked(a, add) {
-    if (this.book.app?.isAdmin?.() || this.book.isCustom(this.i)) return false;
+    if (this.book.app?.isOwner?.() || this.book.isCustom(this.i)) return false;
     let raw = this.s.cells[a];
     if (raw == null && add) raw = this.#refFormula(add.x, a.replace(/\d+/, ''), add.r);
     return isDependent(raw);

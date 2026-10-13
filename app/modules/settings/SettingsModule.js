@@ -66,7 +66,7 @@ class SettingsView extends Component {
         <div class="set-line"><button class="btn primary" id="upd-save">Salva</button><button class="btn" id="upd-now">Controlla ora</button></div>
         <em id="upd-msg" class="xmsg"></em>
       </div>
-      <div class="set-block"><h3>Account</h3><div class="set-line"><span>${esc(app.auth.user?.username || '')}${app.isAdmin() ? ' <em class="badge">Amministratore</em>' : ''}</span><button class="btn" id="set-logout">Esci</button></div></div>` : ''}`;
+      <div class="set-block"><h3>Account</h3><div class="set-line"><span>${esc(app.auth.user?.username || '')}${app.roleLabel() ? ` <em class="badge">${app.roleLabel()}</em>` : ''}</span><button class="btn" id="set-logout">Esci</button></div></div>` : ''}`;
 
     body.querySelector('#set-name-save').onclick = async () => {
       await app.setProfileName(body.querySelector('#set-name').value.trim());

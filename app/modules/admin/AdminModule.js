@@ -36,11 +36,12 @@ class AdminView extends Component {
     const box = this.el.querySelector('#ad-users');
     try {
       const r = await fetch('/api/admin/users', { headers: this.hdr }); if (!r.ok) throw new Error();
-      this.users = (await r.json()).users;
+      const me = this.m.app.auth.user, all = (await r.json()).users;
+      this.users = this.m.app.isOwner() ? all : all.filter(u => u.id === me.id || u.role === 'user');   // il visitatore gestisce solo gli utenti normali
     } catch { box.innerHTML = '<p class="empty">Non riesco a caricare gli utenti.</p>'; return; }
     box.innerHTML = this.users.map(u => {
       const custom = u.ui && (u.ui.hidden?.length || Object.keys(u.ui.labels || {}).length || u.ui.accent || u.ui.mode || u.ui.welcome);
-      return `<button class="row" data-u="${u.id}"><span class="t">${esc(u.displayName || u.username)}${u.isAdmin ? ' <em class="badge">Amministratore</em>' : ''}<small>@${esc(u.username)} · ${u.devices ? u.devices + ' dispositivo/i con notifiche' : 'notifiche non attive'}${custom ? ' · interfaccia personalizzata' : ''}</small></span><span class="m">›</span></button>`;
+      return `<button class="row" data-u="${u.id}"><span class="t">${esc(u.displayName || u.username)}${u.isOwner ? ' <em class="badge">Amministratore</em>' : u.role === 'visitor' ? ' <em class="badge">Visitatore</em>' : ''}<small>@${esc(u.username)} · ${u.devices ? u.devices + ' dispositivo/i con notifiche' : 'notifiche non attive'}${custom ? ' · interfaccia personalizzata' : ''}</small></span><span class="m">›</span></button>`;
     }).join('');
     box.onclick = e => { const b = e.target.closest('[data-u]'); if (b) this.editUi(this.users.find(u => u.id === b.dataset.u)); };
   }
@@ -51,12 +52,14 @@ class AdminView extends Component {
     PAGES.forEach(([id, n]) => f.push({ key: 'lab_' + id, label: `Nome di “${n}” nel menu (vuoto = ${n})`, type: 'text' }));
     SHEETS.forEach((n, i) => i !== 6 && i !== 7 && f.push({ key: 'sh_' + i, label: `Finanze: mostra la scheda “${n}”`, type: 'checkbox' }));
     SHEETS.forEach((n, i) => i !== 6 && i !== 7 && f.push({ key: 'shl_' + i, label: `Finanze: nome della scheda “${n}” (vuoto = ${n})`, type: 'text' }));
+    const canRole = this.m.app.isOwner() && !u.isOwner;
+    if (canRole) f.unshift({ key: 'role', label: 'Permessi: Utente = normale · Visitatore = permessi amministrativi ma senza i dati personali del proprietario', type: 'select', options: [{ value: 'user', label: 'Utente' }, { value: 'visitor', label: 'Visitatore' }] });
     f.push({ key: 'accent', label: 'Colore principale', type: 'select', options: ACCENTS.map(([value, label]) => ({ value, label })) });
     f.push({ key: 'mode', label: 'Tema', type: 'select', options: MODES.map(([value, label]) => ({ value, label })) });
     f.push({ key: 'lock', label: 'Impedisci all\'utente di cambiare colore/tema', type: 'checkbox' });
     f.push({ key: 'welcome', label: 'Messaggio nella Home (facoltativo)', type: 'textarea' });
-    const values = { accent: ui.accent || '', mode: ui.mode || '', lock: !!ui.lock, welcome: ui.welcome || '' };
-    const allowed = ui.sheets || (u.isAdmin ? SHEETS.map((_, i) => i) : BASE_SHEETS);
+    const values = { role: u.role === 'visitor' ? 'visitor' : 'user', accent: ui.accent || '', mode: ui.mode || '', lock: !!ui.lock, welcome: ui.welcome || '' };
+    const allowed = ui.sheets || (u.isOwner ? SHEETS.map((_, i) => i) : BASE_SHEETS);
     SHEETS.forEach((n, i) => { values['sh_' + i] = allowed.includes(i); values['shl_' + i] = ui.sheetLabels?.[i] || ''; });
     PAGES.forEach(([id]) => { values['show_' + id] = !(ui.hidden || []).includes(id); values['lab_' + id] = ui.labels?.[id] || ''; });
     const r = await FormModal.open({ title: `Interfaccia di ${u.displayName || u.username}`, fields: f, values });
@@ -65,6 +68,10 @@ class AdminView extends Component {
     next.sheets = SHEETS.map((_, i) => i).filter(i => i !== 6 && i !== 7 && r['sh_' + i]);
     next.sheetLabels = {}; SHEETS.forEach((_, i) => { if (r['shl_' + i]?.trim()) next.sheetLabels[i] = r['shl_' + i].trim(); });
     PAGES.forEach(([id]) => { if (r['lab_' + id].trim()) next.labels[id] = r['lab_' + id].trim(); });
+    if (canRole && r.role !== (u.role === 'visitor' ? 'visitor' : 'user')) {
+      const rr = await fetch(`/api/admin/users/${u.id}/role`, { method: 'PUT', headers: this.hdr, body: JSON.stringify({ role: r.role }) });
+      if (!rr.ok) alert((await rr.json().catch(() => ({}))).error || 'Impossibile cambiare i permessi');
+    }
     const res = await fetch(`/api/admin/users/${u.id}/ui`, { method: 'PUT', headers: this.hdr, body: JSON.stringify({ ui: next }) });
     if (res.ok && u.id === this.m.app.auth.user.id) await this.m.app.applyUi((await res.json()).ui);
     await this.load();

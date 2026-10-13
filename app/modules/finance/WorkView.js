@@ -76,7 +76,7 @@ export class WorkView extends Component {
         <button class="add" data-newadv="1">+ Nuovo acconto</button>
         <button class="add" data-newjob="1">+ Crea un altro orario di lavoro</button>`;
     }
-    if (this.book.app?.isAdmin?.()) {
+    if (this.book.app?.isOwner?.()) {
       h += `<button class="add" data-toold="1">‹ Torna alla scheda originale (Switch Evolution / Cantiere)</button>`;
     }
     this.body.innerHTML = h;

@@ -40,8 +40,8 @@ export function sheetTitle(book, i) {
 export function sheetVisible(book, i) {
   if (book.isCustom(i)) return !book.customDef(i).deleted;
   const app = book.app, allowed = app?.ui?.sheets;
-  if (i === 6 || i === 7) return !!app?.isAdmin?.();   // Trading 212 e Conto KE: solo dell'amministratore
-  return allowed ? allowed.includes(i) : (app?.isAdmin?.() ? true : BASE_SHEETS.includes(i));
+  if (i === 6 || i === 7) return !!app?.isOwner?.();   // Trading 212 e Conto KE: solo dell'amministratore
+  return allowed ? allowed.includes(i) : (app?.isOwner?.() ? true : BASE_SHEETS.includes(i));
 }
 
 /** Finestra "Nuova pagina": nome e struttura di base. Torna i dati o null. */

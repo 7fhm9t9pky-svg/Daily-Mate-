@@ -18,7 +18,7 @@ function ensureFile() {
 ensureFile();
 
 let state = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-for (const k of ['adminUi', 'inbox', 'push', 'sent', 'groups', 'requests', 'groupItems', 'chats']) state[k] = state[k] || {};
+for (const k of ['adminUi', 'inbox', 'push', 'sent', 'groups', 'requests', 'groupItems', 'chats', 'roles']) state[k] = state[k] || {};
 let writeQueue = Promise.resolve();
 
 /**
@@ -74,8 +74,15 @@ export const db = {
     return Object.keys(state.users)[0] === userId;
   },
   /** L'amministratore e' il proprietario del server: il primo account creato (o OWNER_USERNAME). */
-  isAdmin(userId) { return this.isOwner(userId); },
-  listUsers() { return Object.values(state.users).map(u => ({ id: u.id, username: u.username, displayName: u.displayName, createdAt: u.createdAt, isAdmin: this.isOwner(u.id), ui: state.adminUi[u.id] || {} })); },
+  /** 'owner' (proprietario), 'visitor' (permessi amministrativi ma senza i dati del proprietario) oppure 'user'. */
+  role(userId) { return this.isOwner(userId) ? 'owner' : state.roles?.[userId] === 'visitor' ? 'visitor' : 'user'; },
+  isAdmin(userId) { return this.role(userId) !== 'user'; },
+  async setRole(userId, role) {
+    state.roles = state.roles || {};
+    if (role === 'visitor') state.roles[userId] = 'visitor'; else delete state.roles[userId];
+    await this.flush();
+  },
+  listUsers() { return Object.values(state.users).map(u => ({ id: u.id, username: u.username, displayName: u.displayName, createdAt: u.createdAt, isAdmin: this.isAdmin(u.id), isOwner: this.isOwner(u.id), role: this.role(u.id), ui: state.adminUi[u.id] || {} })); },
   /** Ricerca utenti per nome (visualizzato o username), per invitarli nei gruppi. */
   searchUsers(q, exceptId) {
     q = String(q || '').trim().toLowerCase(); if (q.length < 2) return [];

@@ -8,7 +8,7 @@ import { requireAuth } from './authMiddleware.js';
 export const authRouter = Router();
 
 /** I dati dell'utente mandati al browser (incluso se e' amministratore e l'interfaccia decisa dall'admin). */
-const pub = u => ({ id: u.id, username: u.username, displayName: u.displayName, isAdmin: db.isAdmin(u.id), ui: db.getUi(u.id) });
+const pub = u => ({ id: u.id, username: u.username, displayName: u.displayName, isAdmin: db.isAdmin(u.id), isOwner: db.isOwner(u.id), role: db.role(u.id), ui: db.getUi(u.id) });
 
 authRouter.post('/signup', async (req, res) => {
   const { username, password, displayName } = req.body || {};

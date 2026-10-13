@@ -73,7 +73,9 @@ export class App {
   /** Pagine mostrate a questo utente (alcune possono essere nascoste dall'amministratore). */
   isHidden(id) { return (this.ui.hidden || []).includes(id); }
   moduleName(m) { return this.ui.labels?.[m.id] || m.name; }
-  isAdmin() { return !!this.auth?.user?.isAdmin; }
+  isAdmin() { return !!this.auth?.user?.isAdmin; }                                   // permessi amministrativi (proprietario o visitatore)
+  isOwner() { return !!this.auth?.user?.isOwner; }                                   // proprietario: unico a vedere i dati personali di Finanze
+  roleLabel() { return this.isOwner() ? 'Amministratore' : this.isAdmin() ? 'Visitatore' : ''; }
   visibleModules() { return this.registry.list().filter(m => !this.isHidden(m.id)); }
 
   /** Applica una nuova configurazione dell'interfaccia (arriva dall'amministratore, anche mentre l'app e' aperta). */
@@ -94,7 +96,7 @@ export class App {
   renderNav() {
     this.navEl.innerHTML = `<h2>Daily Mate</h2>` + this.visibleModules().map(m => `
       <button class="nav-item${m.id === this.activeModuleId ? ' is-active' : ''}" data-module="${m.id}">${esc(this.moduleName(m))}</button>`).join('')
-      + `<div class="nav-foot">${this.auth ? esc(this.displayName()) + (this.isAdmin() ? ' · <b>Amministratore</b>' : '') : ''}</div>`;
+      + `<div class="nav-foot">${this.auth ? esc(this.displayName()) + (this.roleLabel() ? ` · <b>${this.roleLabel()}</b>` : '') : ''}</div>`;
     this.navEl.querySelectorAll('[data-module]').forEach(btn => {
       btn.onclick = () => { this.toggleDrawer(false); this.router.goTo(btn.dataset.module); };
     });

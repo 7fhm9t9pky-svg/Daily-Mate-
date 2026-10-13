@@ -71,7 +71,7 @@ export class LavoroBook {
   }
 
   /** L'amministratore tiene la scheda Ore lavoro originale; gli altri usano quella che si costruiscono da soli. */
-  legacyHours() { return !!this.app?.isAdmin?.() && this.st.work.mode !== 'new'; }
+  legacyHours() { return !!this.app?.isOwner?.() && this.st.work.mode !== 'new'; }
 
   /** Porta le ore della scheda originale (Switch Evolution e Cantiere) nel nuovo sistema: nome, paga e giornate. */
   importLegacyHours() {
@@ -131,7 +131,7 @@ export class LavoroBook {
   layoutFor(i) {
     let L = this.D.layout[i];
     if (this.isCustom(i)) return L;
-    if (!this.app?.isAdmin?.()) {
+    if (!this.app?.isOwner?.()) {
       if (i === 0) L = L.filter(x => !(x.t === 'kv' && (x.ta === 'A14' || x.ta === 'A19')));
       if (i === 2) L = L.filter(x => !(x.t === 'list' && x.title === 'Famiglia') && !(x.t === 'stats' && x.items?.[0]?.[0] === 'L4'));
     }

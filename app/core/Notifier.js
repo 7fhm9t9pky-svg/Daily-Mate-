@@ -33,6 +33,7 @@ export class Notifier {
       const r = await fetch('/api/notifications', { headers: this.headers(), cache: 'no-store' });
       if (!r.ok) return;
       const d = await r.json();
+      if (d.role && this.app.auth.user?.role && d.role !== this.app.auth.user.role) { location.reload(); return; }   // l'amministratore ha cambiato i permessi
       this.items = d.items; this.unread = d.unread; this.devices = d.devices || 0;
       this.draw();
       // nuove notifiche arrivate dall'ultimo controllo -> notifica del sistema (se il push del dispositivo non e' attivo)
