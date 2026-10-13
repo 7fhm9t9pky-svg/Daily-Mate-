@@ -1,5 +1,6 @@
 import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
+import { workTotals } from './WorkView.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -39,6 +40,7 @@ export function sheetTitle(book, i) {
 export function sheetVisible(book, i) {
   if (book.isCustom(i)) return !book.customDef(i).deleted;
   const app = book.app, allowed = app?.ui?.sheets;
+  if (i === 6 || i === 7) return !!app?.isAdmin?.();   // Trading 212 e Conto KE: solo dell'amministratore
   return allowed ? allowed.includes(i) : (app?.isAdmin?.() ? true : BASE_SHEETS.includes(i));
 }
 
@@ -66,6 +68,7 @@ export function tileHTML(book, i, first = false) {
   let label = '', value = '—';
   try {
     if (book.isCustom(i)) { const d = book.customDef(i); if (d.total && d.cols.length > 1) [label, value] = ['Totale ' + d.cols[1].toLowerCase(), nice(book, i, 'K2')]; else label = d.cols.join(' · '); }
+    else if (i === 1 && !book.legacyHours()) { const t = workTotals(book.st.work); [label, value] = book.st.work.jobs.length ? ['Ore totali', new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 }).format(t.ore) + ' h'] : ['Crea il tuo orario', '—']; }
     else [label, value] = SHEET_INFO[i] ? SHEET_INFO[i].head(book) : ['', '—'];
   } catch { /* scheda senza dati */ }
   return `<button class="sheet-tile${first ? ' first' : ''}" data-i="${i}">

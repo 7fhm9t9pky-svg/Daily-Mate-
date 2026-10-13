@@ -1,4 +1,5 @@
 import { serialToDate } from './LavoroBook.js';
+import { dayHours } from './WorkView.js';
 import { buildXlsx } from '../../ui/xlsxWriter.js';
 import { dateFieldHTML, bindDateFields, readDate } from '../../ui/dateField.js';
 
@@ -36,7 +37,8 @@ export class ExportPanel {
   save() { this.book.commit(); }
 
   items() {
-    return [...SOURCES.map(s => ({ ...s, custom: false })), ...Object.keys(this.st.jobs).map(id => ({ id, name: this.st.jobs[id].name, custom: true }))];
+    const base = this.book.legacyHours() ? SOURCES.map(s => ({ ...s, custom: false })) : this.st.work.jobs.map(j => ({ id: 'w:' + j.id, name: j.name, custom: false, native: j }));
+    return [...base, ...Object.keys(this.st.jobs).map(id => ({ id, name: this.st.jobs[id].name, custom: true }))];
   }
 
   render() {
@@ -89,7 +91,13 @@ export class ExportPanel {
     for (const it of this.items()) {
       if (!this.st.exp.sel[it.id]) continue;
       const rows = []; let tot = 0;
-      if (!it.custom) {
+      if (it.native) {
+        for (const r of it.native.rows) {
+          const ore = dayHours(r); if (!ore || !r.d || !inR(r.d)) continue;
+          const t = v => { if (!v) return ''; const [h, m] = v.split(':').map(Number); return h + (m || 0) / 60; };
+          rows.push({ iso: r.d, entM: t(r.a), pauM: t(r.b), entP: t(r.c), uscP: t(r.e), ore, nota: r.note || '' }); tot += ore;
+        }
+      } else if (!it.custom) {
         const s = bk.sheets[SHEET];
         for (let r = it.r1; r <= Math.min(it.r2, s.maxRow); r++) {
           const dv = bk.val(SHEET, it.dateCol + r); if (typeof dv !== 'number') continue;

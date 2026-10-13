@@ -166,3 +166,8 @@ Toccando "Apri chat e condivisi" si apre la pagina del gruppo: prima la **chat l
 ## Finanze: schede per utente e pagine "+"
 - **Amministratore**: in Amministrazione → utente puoi scegliere quali schede Finanze vede e rinominarle. Un utente normale, finché non scegli, vede solo Home banking, Ore lavoro, Investimenti aperti, Amministrazione, Entrate e uscite, Risparmio. Le schede nascoste restano nei calcoli (formule e collegamenti invariati).
 - **Pagine "+"**: in Finanze e in ogni pagina c'è il tasto per creare una pagina (o sottopagina) con nome e colonne; funziona come le altre (voci, formule, totale). Si rinomina o elimina dal fondo della pagina.
+
+## Ore lavoro per gli utenti e grafici guidati
+- **Ore lavoro** (utenti normali): parte vuota. "Crea orario di lavoro" chiede nome e paga oraria standard; ogni giornata ha la sua paga modificabile. Ore totali, paghe, Paga tot., Acconti e Saldo residuo si calcolano come somma di tutti gli orari. L'amministratore tiene la scheda originale.
+- Trading 212 e Conto KE sono visibili solo all'amministratore.
+- **Attività → +**: grafico con tabella "etichetta + valore", dalle colonne di una pagina creata con il tasto +, oppure dalle ore/paga dei propri orari di lavoro (nomi semplici, nessuna lettera di cella).

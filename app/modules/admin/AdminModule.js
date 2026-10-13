@@ -49,8 +49,8 @@ class AdminView extends Component {
     const ui = u.ui || {}; const f = [];
     PAGES.forEach(([id, n]) => f.push({ key: 'show_' + id, label: `Mostra “${n}”`, type: 'checkbox' }));
     PAGES.forEach(([id, n]) => f.push({ key: 'lab_' + id, label: `Nome di “${n}” nel menu (vuoto = ${n})`, type: 'text' }));
-    SHEETS.forEach((n, i) => f.push({ key: 'sh_' + i, label: `Finanze: mostra la scheda “${n}”`, type: 'checkbox' }));
-    SHEETS.forEach((n, i) => f.push({ key: 'shl_' + i, label: `Finanze: nome della scheda “${n}” (vuoto = ${n})`, type: 'text' }));
+    SHEETS.forEach((n, i) => i !== 6 && i !== 7 && f.push({ key: 'sh_' + i, label: `Finanze: mostra la scheda “${n}”`, type: 'checkbox' }));
+    SHEETS.forEach((n, i) => i !== 6 && i !== 7 && f.push({ key: 'shl_' + i, label: `Finanze: nome della scheda “${n}” (vuoto = ${n})`, type: 'text' }));
     f.push({ key: 'accent', label: 'Colore principale', type: 'select', options: ACCENTS.map(([value, label]) => ({ value, label })) });
     f.push({ key: 'mode', label: 'Tema', type: 'select', options: MODES.map(([value, label]) => ({ value, label })) });
     f.push({ key: 'lock', label: 'Impedisci all\'utente di cambiare colore/tema', type: 'checkbox' });
@@ -62,8 +62,8 @@ class AdminView extends Component {
     const r = await FormModal.open({ title: `Interfaccia di ${u.displayName || u.username}`, fields: f, values });
     if (!r || r.__delete) return;
     const next = { hidden: PAGES.filter(([id]) => !r['show_' + id]).map(([id]) => id), labels: {}, accent: r.accent, mode: r.mode, lock: r.lock, welcome: r.welcome };
-    next.sheets = SHEETS.map((_, i) => i).filter(i => r['sh_' + i]);
-    next.sheetLabels = {}; SHEETS.forEach((_, i) => { if (r['shl_' + i].trim()) next.sheetLabels[i] = r['shl_' + i].trim(); });
+    next.sheets = SHEETS.map((_, i) => i).filter(i => i !== 6 && i !== 7 && r['sh_' + i]);
+    next.sheetLabels = {}; SHEETS.forEach((_, i) => { if (r['shl_' + i]?.trim()) next.sheetLabels[i] = r['shl_' + i].trim(); });
     PAGES.forEach(([id]) => { if (r['lab_' + id].trim()) next.labels[id] = r['lab_' + id].trim(); });
     const res = await fetch(`/api/admin/users/${u.id}/ui`, { method: 'PUT', headers: this.hdr, body: JSON.stringify({ ui: next }) });
     if (res.ok && u.id === this.m.app.auth.user.id) await this.m.app.applyUi((await res.json()).ui);

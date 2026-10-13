@@ -271,3 +271,8 @@ svg circle{fill:var(--acc)}
 .chat-in input[type=text]{flex:1;min-width:0;padding:12px 14px;border-radius:22px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit;font-size:15px}
 .chat-ph{border:0;background:var(--pa);border-radius:50%;width:44px;height:44px;font-size:20px;box-shadow:var(--sh);cursor:pointer;flex:none}
 .gd-tabs{flex-wrap:nowrap}.gd-tabs button{flex:1;padding:9px 4px;font-size:13px}
+.te-row{display:flex;gap:6px;margin-bottom:6px}
+.te-row input{min-width:0;padding:10px;border-radius:10px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit;font-size:15px}
+.te-l{flex:1.4}.te-v{flex:1}
+.te-x{border:0;background:none;color:var(--neg);font-size:16px;cursor:pointer;padding:0 6px}
+.modal select,.modal .fl input[type=text]{width:100%}

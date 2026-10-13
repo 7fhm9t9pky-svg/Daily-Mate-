@@ -24,7 +24,8 @@ export class LavoroBook {
     this.st = {
       ov: saved?.ov || {}, fm: saved?.fm || {},
       jobs: saved?.jobs || {},                                   // lavori aggiunti a mano per "Esporta ore"
-      custom: saved?.custom || [],                              // pagine create dall'utente con il tasto +
+      custom: saved?.custom || [],
+      work: Object.assign({ jobs: [], adv: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };
     this.onChange = onChange;
@@ -65,6 +66,9 @@ export class LavoroBook {
     this.D.layout.push(lay);
     return this.D.sheets.length - 1;
   }
+
+  /** L'amministratore tiene la scheda Ore lavoro originale; gli altri usano quella che si costruiscono da soli. */
+  legacyHours() { return !!this.app?.isAdmin?.(); }
 
   isCustom(i) { return i >= this.base; }
   customDef(i) { return this.st.custom[i - this.base] || null; }

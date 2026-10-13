@@ -2,6 +2,7 @@ import { Module } from '../Module.js';
 import { LavoroBook, MES } from './LavoroBook.js';
 import { FinanceView, sheetTitle, sheetVisible } from './FinanceView.js';
 import { SheetView } from './SheetView.js';
+import { WorkView, dayHours, dayPay } from './WorkView.js';
 
 import { parseNum } from '../../core/format.js';
 
@@ -59,7 +60,7 @@ export class FinanceModule extends Module {
   #save(st) {
     clearTimeout(this._timer);
     this._timer = setTimeout(() => {
-      this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom });
+      this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work });
     }, 400);
   }
 
@@ -69,6 +70,9 @@ export class FinanceModule extends Module {
       return { async mount(parent) { parent.innerHTML = `<p class="empty">${e.message}. Riprova tra poco.</p>`; }, destroy() {} };
     }
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
+    if (i === 1 && !book.legacyHours() && sheetVisible(book, 1)) {
+      return new WorkView({ book, title: sheetTitle(book, 1), onBack: () => this.app.router.goTo('finance') });
+    }
     if (i !== null && book.sheets[i] && sheetVisible(book, i)) {
       return new SheetView({
         book, index: i, title: sheetTitle(book, i),
@@ -88,6 +92,26 @@ export class FinanceModule extends Module {
     const out = { points: [], unit: def.unit || 'num', goodDown: false, head: null };
     if (def.kind === 'manual') {
       out.points = parsePoints(def.points);
+    } else if (def.kind === 'work') {
+      // ore o paga per giornata dei miei orari di lavoro (un lavoro o tutti insieme)
+      let b; try { b = await this.book(); } catch { return out; }
+      const by = {};
+      for (const j of b.st.work.jobs) {
+        if (def.job && j.id !== def.job) continue;
+        for (const r of j.rows) if (r.d) by[r.d] = (by[r.d] || 0) + (def.measure === 'paga' ? dayPay(j, r) : dayHours(r));
+      }
+      out.unit = def.measure === 'paga' ? 'eur' : 'num';
+      out.points = Object.keys(by).sort().filter(d => by[d] > 0).slice(-30).map(d => ({ l: d.slice(8) + '/' + d.slice(5, 7), v: Math.round(by[d] * 100) / 100 }));
+    } else if (def.kind === 'page') {
+      // colonne di una mia pagina creata con il tasto +
+      let b; try { b = await this.book(); } catch { return out; }
+      const si = Number(def.page), sh = b.sheets[si];
+      if (sh && b.isCustom(si)) for (let r = 4; r <= Math.min(1000, sh.maxRow); r++) {
+        const v = b.num(si, def.vc + r); if (v == null) continue;
+        const xa = def.lc + r;
+        out.points.push({ l: b.fmt(b.shown(si, xa), sh.fmt[xa]), v });
+      }
+      out.points = out.points.slice(-40);
     } else {
       let b;
       try { b = await this.book(); } catch { return out; }
