@@ -1,7 +1,7 @@
 import { Component } from '../../ui/Component.js';
 import { dateFieldHTML, bindDateFields, readDate } from '../../ui/dateField.js';
 import { ExportPanel } from './ExportPanel.js';
-import { serialToDate, isDateFmt, isFormula } from './LavoroBook.js';
+import { serialToDate, isDateFmt, isFormula, isDependent } from './LavoroBook.js';
 import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js';
 import { FormModal } from '../../ui/FormModal.js';
 
@@ -83,7 +83,7 @@ export class SheetView extends Component {
     this.REG = [];
     const keep = this.el.closest('.app-main')?.scrollTop ?? 0;
     const s = this.s; let h = '';
-    for (const x of this.book.layout[this.i]) {
+    for (const x of this.book.layoutFor(this.i)) {
       if (x.t === 'hero') h += this.#hero(x);
       else if (x.t === 'text') h += `<h2 class="s">${esc(this.disp(x.ta))}</h2>`;
       else if (x.t === 'chart') h += this.#chart(this.book.charts[x.i]);
@@ -129,8 +129,9 @@ export class SheetView extends Component {
     const cap = x.hr && hd(x.key) && hd(x.key) !== top ? hd(x.key) : '';
     h += '<div class="lst">';
     const rmax = Math.min(x.r2, s.maxRow);
-    for (let r = x.r1; r <= rmax; r++) {
-      if (!this.#rowHas(x, r, cols)) continue;
+    let rowsN = []; for (let r = x.r1; r <= rmax; r++) if (this.#rowHas(x, r, cols)) rowsN.push(r);
+    if (x.sortKey) rowsN.sort((p, q) => { const a = this.val(x.key + p), b = this.val(x.key + q); return (typeof a === 'number' ? a : 1e9) - (typeof b === 'number' ? b : 1e9) || p - q; });
+    for (const r of rowsN) {
       const flds = cols.map(c => c + r), kv = bk.shown(this.i, x.key + r);
       const chips = cols.filter(c => c !== x.key).map(c => {
         const a = c + r, raw = s.cells[a], v = this.val(a);
@@ -145,7 +146,7 @@ export class SheetView extends Component {
       else h += `<div class="it" data-k="${id}">${cap ? `<small>${esc(cap)}</small>` : ''}<h4>${esc(title) || '—'}</h4><div class="gr">${chips.map(k => `<div class="c ${k.cl}${k.l ? ' w' : ''}"><small>${esc(lab[k.c])}</small><b>${esc(k.txt)}</b></div>`).join('')}</div></div>`;
     }
     h += '</div>';
-    if (this.#freeRow(x, cols) !== null) h += `<button class="add" data-add="${this.reg({ x, cols, lab, top })}">+ Nuova voce</button>`;
+    if (this.#freeRow(x, cols) !== null) h += `<button class="add" data-add="${this.reg({ x, cols, lab, top })}">${x.years ? '+ Aggiungi anno' : '+ Nuova voce'}</button>`;
     return h;
   }
 
@@ -184,7 +185,7 @@ export class SheetView extends Component {
     const ad = e.target.closest('[data-add]');
     if (ad) {
       const g = this.REG[ad.dataset.add], r = this.#freeRow(g.x, g.cols);
-      this.#openForm(g.top || 'Nuova voce', g.cols.map(c => c + r), g.lab, false); return;
+      this.#openForm(g.top || 'Nuova voce', g.cols.map(c => c + r), g.lab, false, { x: g.x, cols: g.cols, r }); return;
     }
     const k = e.target.closest('[data-k]'); if (!k) return;
     const g = this.REG[k.dataset.k];
@@ -216,14 +217,33 @@ export class SheetView extends Component {
     for (const k in this.s.fmt) if (k.replace(/\d/g, '') === col && isDateFmt(this.s.fmt[k])) return this.s.fmt[k];
   }
 
-  #openForm(title, flds, lab, clearable) {
+  /** Formula "modello" per una cella di una riga nuova: quella di un'altra riga dello stesso elenco, adattata al numero di riga. */
+  #refFormula(x, col, r) {
+    const s = this.s;
+    for (let rr = x.r1; rr <= Math.min(x.r2, s.maxRow); rr++) {
+      const raw = s.cells[col + rr];
+      if (isFormula(raw) && this.#isLocal(raw, col + rr)) return raw.replace(new RegExp('(\\$?[A-Z]{1,3}\\$?)' + rr + '(?!\\d)', 'g'), (m, p1) => p1 + r);
+    }
+    return undefined;
+  }
+
+  /** Per gli utenti le formule che dipendono da altre celle sono bloccate e invisibili (non per l'amministratore, non nelle loro pagine). */
+  #locked(a, add) {
+    if (this.book.app?.isAdmin?.() || this.book.isCustom(this.i)) return false;
+    let raw = this.s.cells[a];
+    if (raw == null && add) raw = this.#refFormula(add.x, a.replace(/\d+/, ''), add.r);
+    return isDependent(raw);
+  }
+
+  #openForm(title, flds, lab, clearable, add = null) {
     const s = this.s, bk = this.book, i = this.i;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const fields = flds.map(a => {
-      const raw = s.cells[a], f = s.fmt[a] || (raw == null ? this.#colFmt(a) : undefined), dm = isDateFmt(f) && !isFormula(raw);
+      const raw = s.cells[a], f = s.fmt[a] || (raw == null && !add?.x.years ? this.#colFmt(a) : undefined), dm = isDateFmt(f) && !isFormula(raw);
       const v = raw == null ? '' : dm && typeof raw === 'number' ? serialToDate(raw).toISOString().slice(0, 10) : typeof raw === 'number' ? String(raw).replace('.', ',') : raw;
       const label = esc(lab[a] || lab[a.replace(/\d+/, '')] || a);
+      if (this.#locked(a, add)) return `<label class="fl"><span>${label}</span><input data-a="${a}" data-lock="1" type="text" value="" placeholder="Calcolato automaticamente" disabled><em></em></label>`;
       const input = dm ? dateFieldHTML({ iso: v, attrs: `data-a="${a}" data-f="${esc(f)}"` })
         : `<input data-a="${a}" data-f="" type="text" value="${esc(v)}" autocomplete="off">`;
       return `<label class="fl"><span>${label}</span>${input}<em></em></label>`;
@@ -237,7 +257,7 @@ export class SheetView extends Component {
     document.body.appendChild(overlay);
     bindDateFields(overlay);
     const close = () => overlay.remove();
-    const inputs = [...overlay.querySelectorAll('input[data-a]')];
+    const inputs = [...overlay.querySelectorAll('input[data-a]:not([data-lock])')];
     const isDate = inp => inp.dataset.date === '1';
     const inVal = inp => isDate(inp) ? readDate(inp) : inp.value;
     const preview = inp => {
@@ -254,6 +274,7 @@ export class SheetView extends Component {
       flds.forEach(a => {
         const raw = s.cells[a];
         if (isFormula(raw) && this.#isLocal(raw, a)) return; // le formule di riga restano
+        if (this.#locked(a, null)) return;                      // le formule bloccate non si toccano
         if (raw != null) bk.put(i, a, null);
       });
       this.#done(close);
@@ -269,6 +290,10 @@ export class SheetView extends Component {
         changes.push([a, v, inp.dataset.f]);
       }
       changes.forEach(([a, v, f]) => { bk.put(i, a, v); if (f && v !== null && !s.fmt[a]) bk.setFmt(i, a, f); });
+      if (add) for (const c of add.cols) {              // riga nuova: le formule di calcolo (totali ecc.) arrivano da sole
+        if (s.cells[c + add.r] != null) continue;
+        const fm = this.#refFormula(add.x, c, add.r); if (fm) bk.put(i, c + add.r, fm);
+      }
       this.#done(close);
     };
   }

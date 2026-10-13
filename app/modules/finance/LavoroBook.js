@@ -12,6 +12,8 @@ const nf = (a, b, g) => new Intl.NumberFormat('it-IT', { minimumFractionDigits: 
 export const isDateFmt = f => !!f && /[dmy]/i.test(f);
 export const serialToDate = v => new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 864e5);
 export const isFormula = r => typeof r === 'string' && r[0] === '=';
+/** Formula che dipende da altre celle/schede (le formule con soli numeri, tipo =580, non contano). */
+export const isDependent = r => isFormula(r) && /(\$?[A-Z]{1,3}\$?\d+|\$?[A-Z]{1,3}:\$?[A-Z]{1,3}|!)/.test(r.replace(/"[^"]*"/g, ''));
 
 /**
  * Il "libro" Lavoro: dati di partenza (seed) + modifiche dell'utente (ov/fm)
@@ -38,6 +40,7 @@ export class LavoroBook {
     }
     for (const k in this.st.fm) { const [i, a] = k.split('|'); if (this.D.sheets[i]) this.D.sheets[i].fmt[a] = this.st.fm[k]; }
     this.D.sheets.forEach(s => { s.maxRow = Math.max(s.maxRow, 1000); });
+    for (const c of this.D.charts) if (c.s === 4 && c.r1 === 3) c.r2 = 25;   // grafico annuale: anche gli anni aggiunti
     this.#engine();
   }
 
@@ -119,6 +122,25 @@ export class LavoroBook {
 
   get sheets() { return this.D.sheets; }
   get layout() { return this.D.layout; }
+
+  /**
+   * Disposizione di una scheda per questo utente. Cambia solo per chi non e' amministratore:
+   * Home banking senza "Altre banche" e "Banca prioritaria" (sostituite dalle sottopagine),
+   * Investimenti aperti senza "Famiglia". Gli elenchi degli anni sono ordinati e hanno piu' righe libere.
+   */
+  layoutFor(i) {
+    let L = this.D.layout[i];
+    if (this.isCustom(i)) return L;
+    if (!this.app?.isAdmin?.()) {
+      if (i === 0) L = L.filter(x => !(x.t === 'kv' && (x.ta === 'A14' || x.ta === 'A19')));
+      if (i === 2) L = L.filter(x => !(x.t === 'list' && x.title === 'Famiglia') && !(x.t === 'stats' && x.items?.[0]?.[0] === 'L4'));
+    }
+    return L.map(x => {
+      if (i === 4 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 25, sortKey: true, years: true };
+      if (i === 5 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 18, sortKey: true, years: true };
+      return x;
+    });
+  }
   get charts() { return this.D.charts; }
 
   val(i, a) { return this.eng.get(this.D.sheets[i].name, a); }

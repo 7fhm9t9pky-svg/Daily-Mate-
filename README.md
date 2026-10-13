@@ -172,3 +172,6 @@ Toccando "Apri chat e condivisi" si apre la pagina del gruppo: prima la **chat l
 - Trading 212 e Conto KE sono visibili solo all'amministratore.
 - **Attività → +**: grafico con tabella "etichetta + valore", dalle colonne di una pagina creata con il tasto +, oppure dalle ore/paga dei propri orari di lavoro (nomi semplici, nessuna lettera di cella).
 - **Amministratore**: nella scheda Ore lavoro originale il tasto "Passa al nuovo sistema ore" porta (se vuoi) Switch Evolution e Cantiere nel nuovo sistema con paga e acconti; dal nuovo sistema si torna all'originale con un tasto. Ogni orario si elimina da "modifica" accanto al suo nome.
+- **Formule collegate**: per gli utenti le formule che dipendono da altre celle sono bloccate: nel modulo il campo è vuoto e non modificabile ("Calcolato automaticamente"). L'amministratore le vede e le modifica.
+- **Home banking** (utenti): niente "Altre banche" e "Banca prioritaria": si sostituiscono con le sottopagine ("＋ Nuova sottopagina"). **Investimenti aperti** (utenti): senza "Famiglia".
+- **Anni** in Amministrazione (Annuale, fino a 23 anni) e in Entrate e uscite (fino a 16): "+ Aggiungi anno", si tolgono toccando la riga e "Elimina"; gli anni sono ordinati e i totali si calcolano da soli.
