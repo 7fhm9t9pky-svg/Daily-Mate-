@@ -1,0 +1,7 @@
+node_modules/
+server/data/
+server/.env
+.DS_Store
+
+# Dati di partenza personali: non pubblicarli
+server/seed/lavoro-data.json
