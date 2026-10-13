@@ -148,3 +148,21 @@ Il repository deve essere pubblico e NON deve contenere `server/seed/lavoro-data
 - **Notifiche:** campanella in alto. Messaggi dell'admin (a tutti o a un utente), promemoria automatici per gli avvisi (giorno stesso/giorni prima, a partire dalle 8) e per gli eventi del calendario (10/30/60 minuti prima). Ogni utente sceglie in Impostazioni > Notifiche.
 - **Notifiche sul dispositivo (anche ad app chiusa):** Impostazioni > Notifiche > Attiva. Usano il Web Push standard (nessuna dipendenza), servono HTTPS (l'indirizzo Tailscale va bene). Su iPhone: Condividi > Aggiungi alla schermata Home, poi apri l'app da li' e attiva le notifiche.
 - Le chiavi del push sono in `server/data/vapid.json` (non cancellarlo, altrimenti i dispositivi vanno riattivati).
+
+
+## Gruppi (calendario, avvisi e documenti condivisi)
+
+- Menu **Gruppi**: in alto la barra di ricerca (per nome di gruppo o persona; se scrivi un codice compare il pulsante "Chiedi di entrare").
+- **I miei gruppi**: ogni gruppo ha un codice univoco (es. `K7M2-9QXP`). Il creatore può rinominare, rimuovere persone o eliminare il gruppo; gli altri possono uscire.
+- **Richieste da accettare**: inviti ricevuti (li accetti tu) e richieste di ingresso al tuo gruppo (le accetti tu come creatore).
+- **Crea e invita**: crea un gruppo, entra con un codice, invita una persona cercandola per nome.
+- In Calendario, Avvisi e Documenti, se fai parte di almeno un gruppo, il form ha il campo **Condividi con**: "Solo io" oppure un gruppo. Gli elementi condivisi sono visibili ai membri col simbolo 👥.
+- Modifica/eliminazione: solo chi l'ha creato o il creatore del gruppo; tutti i membri possono però spuntare "Fatto" su un avviso. I membri ricevono una notifica per ogni nuovo elemento e i promemoria valgono anche per quelli condivisi.
+- Dati nel server: `groups`, `requests`, `groupItems` dentro `server/data/db.json` (inclusi nei backup).
+
+### Chat del gruppo
+Toccando "Apri chat e condivisi" si apre la pagina del gruppo: prima la **chat live** (testo e foto, si aggiorna da sola ogni 3 secondi), poi il menu per passare a **Calendario, Avvisi e Documenti** del gruppo. Le foto sono ridotte automaticamente e salvate in `server/data/chat/`; restano gli ultimi 500 messaggi per gruppo.
+
+## Finanze: schede per utente e pagine "+"
+- **Amministratore**: in Amministrazione → utente puoi scegliere quali schede Finanze vede e rinominarle. Un utente normale, finché non scegli, vede solo Home banking, Ore lavoro, Investimenti aperti, Amministrazione, Entrate e uscite, Risparmio. Le schede nascoste restano nei calcoli (formule e collegamenti invariati).
+- **Pagine "+"**: in Finanze e in ogni pagina c'è il tasto per creare una pagina (o sottopagina) con nome e colonne; funziona come le altre (voci, formule, totale). Si rinomina o elimina dal fondo della pagina.
