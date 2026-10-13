@@ -1,0 +1,21 @@
+/* Palette ripresa dal foglio "Lavoro": verdi su fondo chiaro, con tema scuro. */
+:root{
+  --bg:#eef1ec; --pa:#fff; --ink:#17231d; --mu:#6a766f; --ln:#e0e6df;
+  --acc:#0e5a47; --acc2:#1f8a6b; --soft:#e4f0ea; --on-acc:#fff;
+  --g:#c3ecd0; --r:#f8c4bd; --y:#f9eaa5;
+  --pos:#1c7a55; --neg:#b4402f;
+  --sh:0 1px 2px #0001,0 6px 18px #0e5a4712;
+  --font:'IBM Plex Sans',system-ui,sans-serif;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1512; --pa:#19221e; --ink:#e8efe9; --mu:#8fa196; --ln:#28352f;
+  --acc:#5fd0a8; --acc2:#2f9c7a; --soft:#22312a; --on-acc:#06140e;
+  --g:#1f5a3a; --r:#6a2a25; --y:#5f5620; --pos:#6fd6a8; --neg:#ef8e7e; --sh:none;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]):not([data-theme="dark"]){
+    --bg:#0f1512; --pa:#19221e; --ink:#e8efe9; --mu:#8fa196; --ln:#28352f;
+    --acc:#5fd0a8; --acc2:#2f9c7a; --soft:#22312a; --on-acc:#06140e;
+    --g:#1f5a3a; --r:#6a2a25; --y:#5f5620; --pos:#6fd6a8; --neg:#ef8e7e; --sh:none;
+  }
+}

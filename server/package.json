@@ -1,0 +1,14 @@
+{
+  "name": "daily-mate-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend minimale per Daily Mate: auth + storage chiave/valore per-utente.",
+  "scripts": {
+    "start": "node scripts/supervisor.cjs",
+    "start:direct": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,21 @@
+.app-shell{height:100%;display:flex}
+.content{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
+.app-main{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 14px 90px}
+.page{max-width:980px;margin:0 auto}
+
+/* Telefono: il menu e' un pannello a sinistra che si apre con ☰ */
+.drawer{position:fixed;inset:0;display:none;z-index:20}
+.drawer.open{display:block}
+.app-nav{position:absolute;left:0;top:0;bottom:0;width:min(82vw,300px);border-radius:0 24px 24px 0;
+  padding:calc(18px + env(safe-area-inset-top,0px)) 10px 14px}
+
+/* Computer: menu sempre visibile a sinistra */
+@media(min-width:900px){
+  .drawer{position:static;display:block;width:250px;flex:none;z-index:auto}
+  .drawer-bk{display:none}
+  .app-nav{position:static;width:auto;height:100%;border-radius:0;box-shadow:var(--sh);padding:22px 12px 14px}
+  #menu-btn{display:none}
+  .topbar{padding:16px 28px 6px}
+  .app-main{padding:4px 28px 60px}
+  .fab{right:34px}
+}

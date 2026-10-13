@@ -1,0 +1,271 @@
+import { Component } from '../../ui/Component.js';
+import { dateFieldHTML, bindDateFields, readDate } from '../../ui/dateField.js';
+import { ExportPanel } from './ExportPanel.js';
+import { serialToDate, isDateFmt, isFormula } from './LavoroBook.js';
+import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js';
+import { FormModal } from '../../ui/FormModal.js';
+
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+
+/**
+ * Dettaglio di UNA scheda del foglio Lavoro: stesse "carte" dell'artefatto
+ * (titolo, riquadri, liste, grafici) con la possibilita' di toccare una voce per
+ * modificarla, aggiungerne una nuova o eliminarla.
+ */
+export class SheetView extends Component {
+  constructor({ book, index, title, onBack, onSaved, onOpen }) {
+    super(); this.onOpen = onOpen;
+    this.book = book; this.i = index; this.title = title; this.onBack = onBack; this.onSaved = onSaved;
+    this.REG = [];
+  }
+
+  render() {
+    const el = document.createElement('section');
+    el.className = 'page sheet-page';
+    el.innerHTML = `
+      <div class="page-head"><button class="back" data-act="back">‹ ${esc(this.#parentName())}</button><h1>${esc(this.title)}</h1></div>
+      <div class="sheet-body"></div>`;
+    el.querySelector('[data-act="back"]').onclick = () => this.onBack();
+    this.body = el.querySelector('.sheet-body');
+    this.body.addEventListener('click', e => this.#onClick(e));
+    return el;
+  }
+
+  async afterMount() { this.refresh(); }
+
+  #parentName() { const p = this.book.parentOf(this.i); return p === null ? 'Finanze' : sheetTitle(this.book, p); }
+
+  // ---------- helpers di lettura ----------
+  get s() { return this.book.sheets[this.i]; }
+  val(a) { return this.book.val(this.i, a); }
+  disp(a) { return this.book.disp(this.i, a); }
+  reg(o) { return this.REG.push(o) - 1; }
+
+  #cfClass(col, row, v) {
+    if (typeof v !== 'number') return '';
+    for (const c of this.s.cf) {
+      const m = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(c.rng); if (!m) continue;
+      if (col < this.book.cn(m[1]) || col > this.book.cn(m[3]) || row < +m[2] || row > +m[4]) continue;
+      const a = +c.f[0], b = +c.f[1];
+      if (c.op === 'greaterThan' && v > a) return 'g';
+      if (c.op === 'lessThan' && v < a) return 'r';
+      if (c.op === 'between' && v >= Math.min(a, b) && v <= Math.max(a, b)) return 'y';
+    }
+    return '';
+  }
+
+  #rowHas(x, r, cols) {
+    const s = this.s;
+    if (s.cells[x.key + r] != null && s.cells[x.key + r] !== '') return true;
+    for (const c of cols) {
+      if (c === x.key) continue;
+      const raw = s.cells[c + r]; if (raw == null || raw === '') continue;
+      if (!isFormula(raw)) return true;
+      const v = this.val(c + r); if (v != null && v !== 0 && v !== '') return true;
+    }
+    return false;
+  }
+
+  #freeRow(x, cols) {
+    const rmax = Math.min(x.r2, this.s.maxRow);
+    for (let r = x.r1; r <= rmax; r++) if (!this.#rowHas(x, r, cols)) return r;
+    return null;
+  }
+
+  #isLocal(f, a) {
+    const row = a.replace(/\D/g, ''); f = f.replace(/"[^"]*"/g, '');
+    if (/[!:]/.test(f)) return false;
+    return (f.match(/\$?[A-Z]{1,3}\$?\d+/g) || []).every(x => x.replace(/\D/g, '') === row);
+  }
+
+  // ---------- disegno ----------
+  refresh() {
+    this.REG = [];
+    const keep = this.el.closest('.app-main')?.scrollTop ?? 0;
+    const s = this.s; let h = '';
+    for (const x of this.book.layout[this.i]) {
+      if (x.t === 'hero') h += this.#hero(x);
+      else if (x.t === 'text') h += `<h2 class="s">${esc(this.disp(x.ta))}</h2>`;
+      else if (x.t === 'chart') h += this.#chart(this.book.charts[x.i]);
+      else if (x.t === 'stats') {
+        if (x.title) h += `<h2 class="s">${esc(x.title)}</h2>`;
+        h += '<div class="tiles">' + x.items.map((p, j) => this.#tile(p[0], p[1], x.big && j === 0)).join('') + '</div>';
+      } else if (x.t === 'kv') {
+        h += `<h2 class="s">${esc(this.disp(x.ta))}</h2><div class="tiles">`;
+        for (let c = this.book.cn(x.c1); c <= this.book.cn(x.c2); c++) h += this.#tile(this.book.nc(c) + x.hr, this.book.nc(c) + x.vr, x.big && c === this.book.cn(x.c1));
+        h += '</div>';
+      } else if (x.t === 'list') h += this.#list(x);
+    }
+    if (this.i === 1) h = '<button class="xbtn" data-export="1">⇪ Esporta ore</button>' + h;
+    const kids = this.book.childrenOf(this.i).filter(x => sheetVisible(this.book, x));
+    h += `<h2 class="s">Sottopagine</h2><div class="sheet-grid">${kids.map(x => tileHTML(this.book, x)).join('')}<button class="sheet-tile add-tile" data-newsub="1"><h3>＋ Nuova sottopagina</h3><div class="k">Aggiungi una pagina dentro questa</div></button></div>`;
+    if (this.book.isCustom(this.i)) h += `<button class="add" data-editpage="1">✎ Rinomina o elimina questa pagina</button>`;
+    this.body.innerHTML = h || `<p class="empty">Questa scheda è vuota.</p>`;
+    const sc = this.el.closest('.app-main'); if (sc) sc.scrollTop = keep;
+    void s;
+  }
+
+  #hero(x) {
+    const name = this.book.app?.displayName?.() || '';
+    const txt = this.i === 0 && name ? `Ciao ${name}` : this.disp(x.ta);
+    const id = this.reg({ f: [x.ta], lab: { [x.ta]: 'Titolo' } });
+    return `<div class="hero" data-k="${id}"><h1>${esc(txt)}</h1></div>`;
+  }
+
+  #tile(la, a, big) {
+    const id = this.reg({ f: [a], lab: { [a]: la ? this.disp(la) : a } });
+    return `<div class="tl${big ? ' big' : ''}" data-k="${id}"><small>${esc(la ? this.disp(la) : '')}</small><b>${esc(this.disp(a)) || '—'}</b></div>`;
+  }
+
+  #list(x) {
+    const s = this.s, bk = this.book;
+    const c1 = bk.cn(x.c1), c2 = bk.cn(x.c2), cols = [];
+    for (let c = c1; c <= c2; c++) cols.push(bk.nc(c));
+    const hd = c => x.labels && x.labels[c] ? x.labels[c] : (x.hr ? this.disp(c + x.hr) : '');
+    const lab = {};
+    cols.forEach(c => lab[c] = (x.flab && x.flab[c]) || hd(c) || (c === x.key ? 'Voce' : 'Valore'));
+    const top = x.ta ? this.disp(x.ta) : x.title || '';
+    let h = top ? `<h2 class="s">${esc(top)}</h2>` : '';
+    const cap = x.hr && hd(x.key) && hd(x.key) !== top ? hd(x.key) : '';
+    h += '<div class="lst">';
+    const rmax = Math.min(x.r2, s.maxRow);
+    for (let r = x.r1; r <= rmax; r++) {
+      if (!this.#rowHas(x, r, cols)) continue;
+      const flds = cols.map(c => c + r), kv = bk.shown(this.i, x.key + r);
+      const chips = cols.filter(c => c !== x.key).map(c => {
+        const a = c + r, raw = s.cells[a], v = this.val(a);
+        if (v == null || v === '') return null;
+        if (isFormula(raw) && v === 0) return null;
+        const cl = (x.cf ? this.#cfClass(bk.cn(c), r, v) : '') || '';
+        return { c, txt: bk.fmt(v, s.fmt[a]), cl: cl + (v instanceof bk.Err ? ' e' : ''), l: typeof v === 'string' && v.length > 22 };
+      }).filter(Boolean);
+      const id = this.reg({ f: flds, lab, title: top || this.title });
+      const title = bk.fmt(kv, s.fmt[x.key + r]);
+      if (chips.length <= 1) h += `<div class="it ln" data-k="${id}"><span>${esc(title) || '—'}</span><b>${chips[0] ? esc(chips[0].txt) : ''}</b></div>`;
+      else h += `<div class="it" data-k="${id}">${cap ? `<small>${esc(cap)}</small>` : ''}<h4>${esc(title) || '—'}</h4><div class="gr">${chips.map(k => `<div class="c ${k.cl}${k.l ? ' w' : ''}"><small>${esc(lab[k.c])}</small><b>${esc(k.txt)}</b></div>`).join('')}</div></div>`;
+    }
+    h += '</div>';
+    if (this.#freeRow(x, cols) !== null) h += `<button class="add" data-add="${this.reg({ x, cols, lab, top })}">+ Nuova voce</button>`;
+    return h;
+  }
+
+  #chart(c) {
+    const bk = this.book, s = bk.sheets[c.s], P = [];
+    for (let r = c.r1; r <= c.r2; r++) {
+      const y = bk.val(c.s, c.yc + r);
+      if (typeof y === 'number') P.push([bk.fmt(bk.val(c.s, c.xc + r), c.xf), y]);
+    }
+    void s;
+    if (!P.length) return '';
+    const W = 340, H = 190, l = 44, t = 10, b = 24, rr = 10;
+    let lo = Math.min(...P.map(p => p[1])), hi = Math.max(...P.map(p => p[1]));
+    if (lo === hi) { lo -= 1; hi += 1; }
+    const X = i => l + (P.length < 2 ? (W - l - rr) / 2 : i * (W - l - rr) / (P.length - 1)), Y = v => t + (hi - v) * (H - t - b) / (hi - lo);
+    const k = v => Math.abs(v) >= 1000 ? (v / 1000).toFixed(1).replace('.', ',') + 'k' : String(Number(v.toFixed(1))).replace('.', ',');
+    let g = '';
+    for (let i = 0; i < 4; i++) { const v = lo + (hi - lo) * i / 3; g += `<line class="gr" x1="${l}" x2="${W - rr}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${l - 4}" y="${Y(v) + 3}" text-anchor="end">${k(v)}</text>`; }
+    const step = Math.max(1, Math.ceil(P.length / 5));
+    const xs = P.map((p, i) => i % step === 0 || i === P.length - 1 ? `<text x="${X(i)}" y="${H - 8}" text-anchor="middle">${esc(p[0].slice(0, 7))}</text>` : '').join('');
+    return `<div class="card"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}<polyline class="ln" points="${P.map((p, i) => X(i) + ',' + Y(p[1])).join(' ')}"/>${P.map((p, i) => `<circle cx="${X(i)}" cy="${Y(p[1])}" r="2.5"/>`).join('')}${xs}</svg></div>`;
+  }
+
+  // ---------- interazione ----------
+  #onClick(e) {
+    if (e.target.closest('[data-export]')) { new ExportPanel({ book: this.book, onClose: () => this.refresh() }).open(); return; }
+    const tl = e.target.closest('.sheet-tile[data-i]'); if (tl) { this.onOpen?.(+tl.dataset.i); return; }
+    if (e.target.closest('[data-newsub]')) { askNewPage(this.title).then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: this.i })); }); return; }
+    if (e.target.closest('[data-editpage]')) { this.#editPage(); return; }
+    const ad = e.target.closest('[data-add]');
+    if (ad) {
+      const g = this.REG[ad.dataset.add], r = this.#freeRow(g.x, g.cols);
+      this.#openForm(g.top || 'Nuova voce', g.cols.map(c => c + r), g.lab, false); return;
+    }
+    const k = e.target.closest('[data-k]'); if (!k) return;
+    const g = this.REG[k.dataset.k];
+    this.#openForm(g.title || this.title, g.f, g.lab, g.f.length > 1);
+  }
+
+  async #editPage() {
+    const bk = this.book, d = bk.customDef(this.i);
+    const r = await FormModal.open({ title: 'Pagina', fields: [{ key: 'name', label: 'Nome della pagina', type: 'text' }], values: { name: d.name }, allowDelete: true });
+    if (!r) return;
+    if (r.__delete) {
+      if (!confirm('Eliminare questa pagina e le sue sottopagine? I dati inseriti non saranno più visibili.')) return;
+      bk.deleteCustom(this.i); return this.onBack();
+    }
+    bk.renameCustom(this.i, r.name); this.title = d.name;
+    this.el.querySelector('h1').textContent = d.name; this.refresh();
+  }
+
+  #parseIn(t, isDate) {
+    if (isDate) return t ? Math.round(Date.UTC(+t.slice(0, 4), +t.slice(5, 7) - 1, +t.slice(8, 10)) / 864e5) + 25569 : null;
+    t = t.trim(); if (t === '') return null; if (t[0] === '=') return t;
+    if (/^-?\d+(,\d+)?$/.test(t)) return Number(t.replace(',', '.'));
+    if (/^-?\d*\.\d+$/.test(t)) return Number(t);
+    return t;
+  }
+
+  #colFmt(a) {
+    const col = a.replace(/\d/g, '');
+    for (const k in this.s.fmt) if (k.replace(/\d/g, '') === col && isDateFmt(this.s.fmt[k])) return this.s.fmt[k];
+  }
+
+  #openForm(title, flds, lab, clearable) {
+    const s = this.s, bk = this.book, i = this.i;
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const fields = flds.map(a => {
+      const raw = s.cells[a], f = s.fmt[a] || (raw == null ? this.#colFmt(a) : undefined), dm = isDateFmt(f) && !isFormula(raw);
+      const v = raw == null ? '' : dm && typeof raw === 'number' ? serialToDate(raw).toISOString().slice(0, 10) : typeof raw === 'number' ? String(raw).replace('.', ',') : raw;
+      const label = esc(lab[a] || lab[a.replace(/\d+/, '')] || a);
+      const input = dm ? dateFieldHTML({ iso: v, attrs: `data-a="${a}" data-f="${esc(f)}"` })
+        : `<input data-a="${a}" data-f="" type="text" value="${esc(v)}" autocomplete="off">`;
+      return `<label class="fl"><span>${label}</span>${input}<em></em></label>`;
+    }).join('');
+    overlay.innerHTML = `<div class="modal"><h3>${esc(title)}</h3>${fields}
+      <div class="modal-actions">
+        <button class="btn" data-act="cancel">Annulla</button>
+        ${clearable ? '<button class="btn danger" data-act="delete">Elimina</button>' : ''}
+        <button class="btn primary" data-act="save">Salva</button>
+      </div></div>`;
+    document.body.appendChild(overlay);
+    bindDateFields(overlay);
+    const close = () => overlay.remove();
+    const inputs = [...overlay.querySelectorAll('input[data-a]')];
+    const isDate = inp => inp.dataset.date === '1';
+    const inVal = inp => isDate(inp) ? readDate(inp) : inp.value;
+    const preview = inp => {
+      const em = inp.closest('label').querySelector('em'), a = inp.dataset.a, iv = inVal(inp);
+      if (isDate(inp)) { em.textContent = iv === null ? 'Data non valida (gg/mm/aaaa)' : ''; return; }
+      const v = this.#parseIn(iv, false);
+      if (typeof v === 'string' && v[0] === '=') { try { em.textContent = '= ' + bk.preview(i, a, v); } catch { em.textContent = 'Formula non valida'; } } else em.textContent = '';
+    };
+    inputs.forEach(inp => { preview(inp); inp.addEventListener('input', () => preview(inp)); inp.addEventListener('change', () => preview(inp)); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    overlay.querySelector('[data-act="cancel"]').onclick = close;
+    overlay.querySelector('[data-act="delete"]')?.addEventListener('click', () => {
+      if (!confirm('Eliminare questa voce? I totali si aggiornano subito.')) return;
+      flds.forEach(a => {
+        const raw = s.cells[a];
+        if (isFormula(raw) && this.#isLocal(raw, a)) return; // le formule di riga restano
+        if (raw != null) bk.put(i, a, null);
+      });
+      this.#done(close);
+    });
+    overlay.querySelector('[data-act="save"]').onclick = () => {
+      const changes = [];
+      for (const inp of inputs) {
+        const iv = inVal(inp);
+        if (isDate(inp) && iv === null) { inp.classList.add('invalid'); inp.closest('label').querySelector('em').textContent = 'Data non valida (gg/mm/aaaa)'; return; }
+        const a = inp.dataset.a, v = this.#parseIn(iv, isDate(inp)), old = s.cells[a];
+        if ((v === null && old == null) || v === old) continue;
+        if (typeof v === 'string' && v[0] === '=') { try { bk.check(v); } catch { inp.closest('label').querySelector('em').textContent = 'Formula non valida'; return; } }
+        changes.push([a, v, inp.dataset.f]);
+      }
+      changes.forEach(([a, v, f]) => { bk.put(i, a, v); if (f && v !== null && !s.fmt[a]) bk.setFmt(i, a, f); });
+      this.#done(close);
+    };
+  }
+
+  #done(close) { this.book.commit(); close(); this.refresh(); this.onSaved?.(); }
+}

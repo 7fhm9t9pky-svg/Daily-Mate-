@@ -1,0 +1,149 @@
+import { makeEngine } from './engine.js';
+
+export const MES = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+/** Giorno di oggi come numero seriale Excel (usato dalla funzione TODAY() del foglio). */
+export function todaySerial() {
+  const d = new Date();
+  return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5) + 25569;
+}
+
+const nf = (a, b, g) => new Intl.NumberFormat('it-IT', { minimumFractionDigits: a, maximumFractionDigits: b, useGrouping: g });
+export const isDateFmt = f => !!f && /[dmy]/i.test(f);
+export const serialToDate = v => new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 864e5);
+export const isFormula = r => typeof r === 'string' && r[0] === '=';
+
+/**
+ * Il "libro" Lavoro: dati di partenza (seed) + modifiche dell'utente (ov/fm)
+ * + motore di formule. Tutto lo stato modificabile e' in `state` = { ov, fm },
+ * che viene salvato per-utente tramite onChange().
+ */
+export class LavoroBook {
+  constructor(seed, saved, onChange) {
+    this.D = seed;
+    this.st = {
+      ov: saved?.ov || {}, fm: saved?.fm || {},
+      jobs: saved?.jobs || {},                                   // lavori aggiunti a mano per "Esporta ore"
+      custom: saved?.custom || [],                              // pagine create dall'utente con il tasto +
+      exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
+    };
+    this.onChange = onChange;
+    this.base = this.D.sheets.length;                              // le schede "di fabbrica" sono le prime
+    this.st.custom.forEach(def => this.#buildCustom(def));
+    for (const k in this.st.ov) {
+      const [i, a] = k.split('|'); const c = this.D.sheets[i]?.cells;
+      if (!c) continue;
+      if (this.st.ov[k] === null) delete c[a]; else c[a] = this.st.ov[k];
+    }
+    for (const k in this.st.fm) { const [i, a] = k.split('|'); if (this.D.sheets[i]) this.D.sheets[i].fmt[a] = this.st.fm[k]; }
+    this.D.sheets.forEach(s => { s.maxRow = Math.max(s.maxRow, 1000); });
+    this.#engine();
+  }
+
+  #engine() {
+    this.eng = makeEngine(this.D, todaySerial());
+    this.Err = this.eng.Err; this.cn = this.eng.cn; this.nc = this.eng.nc;
+  }
+
+  /** Crea scheda + disposizione di una pagina "a piacimento": titolo, totale e un elenco di voci. */
+  #buildCustom(def) {
+    const cols = (def.cols && def.cols.length ? def.cols : ['Voce', 'Importo']).slice(0, 6);
+    const L = i => String.fromCharCode(65 + i), last = L(cols.length - 1);
+    const cells = { A1: def.name }, fmt = {};
+    cols.forEach((c, i) => { cells[L(i) + '3'] = c; if (i > 0) fmt[L(i) + '4'] = ''; });
+    const items = [];
+    if (def.total && cols.length > 1) { cells.K1 = 'Totale ' + cols[1].toLowerCase(); cells.K2 = '=SUM(B4:B1000)'; fmt.K2 = '#,##0.00'; items.push(['K1', 'K2']); }
+    cols.forEach((c, i) => {
+      if (i === 0) return;
+      const f = /data|scad/i.test(c) ? 'dd/mm/yyyy' : i === 1 ? '#,##0.00' : '';
+      for (let r = 4; r <= 300; r++) if (f) fmt[L(i) + r] = f;
+    });
+    this.D.sheets.push({ name: 'P' + def.id, cells, fmt, maxRow: 1000, maxCol: 12, freeze: null, cf: [], merges: [], widths: {} });
+    const lay = [{ t: 'hero', ta: 'A1' }];
+    if (items.length) lay.push({ t: 'stats', title: '', items, big: true });
+    lay.push({ t: 'list', key: 'A', c1: 'A', c2: last, r1: 4, r2: 1000, hr: 3, title: '' });
+    this.D.layout.push(lay);
+    return this.D.sheets.length - 1;
+  }
+
+  isCustom(i) { return i >= this.base; }
+  customDef(i) { return this.st.custom[i - this.base] || null; }
+  /** Indice della scheda "madre" (null = pagina principale di Finanze). */
+  parentOf(i) { return this.isCustom(i) ? (this.customDef(i).parent ?? null) : null; }
+  childrenOf(i) { return this.st.custom.map((d, k) => [d, this.base + k]).filter(([d, x]) => !d.deleted && (d.parent ?? null) === i).map(([, x]) => x); }
+
+  addCustom({ name, parent = null, cols, total }) {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 4);
+    const def = { id, name: String(name).trim().slice(0, 40) || 'Nuova pagina', parent, cols, total: !!total };
+    this.st.custom.push(def);
+    const idx = this.#buildCustom(def);
+    this.#engine(); this.commit();
+    return idx;
+  }
+
+  renameCustom(i, name) {
+    const d = this.customDef(i); if (!d) return;
+    d.name = String(name).trim().slice(0, 40) || d.name;
+    this.D.sheets[i].cells.A1 = d.name; this.eng.set(this.D.sheets[i].name, 'A1', d.name); this.commit();
+  }
+
+  deleteCustom(i) {
+    const kill = x => { this.customDef(x).deleted = true; this.childrenOf(x).forEach(kill); };
+    kill(i); this.commit();
+  }
+
+  get sheets() { return this.D.sheets; }
+  get layout() { return this.D.layout; }
+  get charts() { return this.D.charts; }
+
+  val(i, a) { return this.eng.get(this.D.sheets[i].name, a); }
+
+  /** Valore mostrato: se la cella e' dentro un'unione, quello della cella in alto a sinistra. */
+  shown(i, a) {
+    const s = this.D.sheets[i]; const v = this.val(i, a);
+    if (v != null && v !== '') return v;
+    const m = /^([A-Z]+)(\d+)$/.exec(a), c = this.cn(m[1]), r = +m[2];
+    for (const [r1, c1, r2, c2] of s.merges) if (r >= r1 && r <= r2 && c >= c1 && c <= c2) return this.val(i, this.nc(c1) + r1);
+    return v;
+  }
+
+  fmt(v, f) {
+    if (v == null) return '';
+    if (v instanceof this.Err) return (v.c === '#DIV/0!' || v.c === '#VALUE!') ? '—' : v.c;
+    if (typeof v === 'boolean') return v ? 'VERO' : 'FALSO';
+    if (typeof v === 'string') return v;
+    if (isDateFmt(f)) {
+      const x = serialToDate(v), p = n => String(n).padStart(2, '0');
+      return f.includes('mmmm') ? x.getUTCDate() + ' ' + MES[x.getUTCMonth()]
+        : f.includes('yyyy') ? p(x.getUTCDate()) + '/' + p(x.getUTCMonth() + 1) + '/' + x.getUTCFullYear()
+        : x.getUTCDate() + '/' + (x.getUTCMonth() + 1);
+    }
+    if (f === '0') return nf(0, 0, false).format(v);
+    if (f === '0.00') return nf(2, 2, false).format(v);
+    if (f === '#,##0.00') return nf(2, 2, true).format(v);
+    return String(Number(v.toPrecision(10))).replace('.', ',');
+  }
+
+  disp(i, a) { return this.fmt(this.shown(i, a), this.D.sheets[i].fmt[a]); }
+
+  /** Numero di una cella (0 se vuota/errore): comodo per Home e riepiloghi. */
+  num(i, a) { const v = this.val(i, a); return typeof v === 'number' ? v : null; }
+
+  /** Anteprima di una formula senza salvarla. */
+  preview(i, a, raw) {
+    const s = this.D.sheets[i];
+    this.eng.check(raw);
+    const old = s.cells[a];
+    this.eng.set(s.name, a, raw);
+    const r = this.eng.get(s.name, a);
+    this.eng.set(s.name, a, old === undefined ? null : old);
+    return this.fmt(r, s.fmt[a]);
+  }
+
+  check(raw) { this.eng.check(raw); }
+
+  put(i, a, v) { this.eng.set(this.D.sheets[i].name, a, v); this.st.ov[i + '|' + a] = v; }
+  setFmt(i, a, f) { this.D.sheets[i].fmt[a] = f; this.st.fm[i + '|' + a] = f; }
+  commit() { this.onChange?.(this.st); }
+  resetState() { this.st.ov = {}; this.st.fm = {}; this.onChange?.(this.st); }
+}

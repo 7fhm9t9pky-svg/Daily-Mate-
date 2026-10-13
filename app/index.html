@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e5a47">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Daily Mate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/responsive.css">
+</head>
+<body>
+  <div id="auth-gate" hidden></div>
+  <div id="app-shell" class="app-shell" hidden>
+    <div id="drawer" class="drawer">
+      <div class="drawer-bk" id="drawer-bk"></div>
+      <nav id="app-nav" class="app-nav"></nav>
+    </div>
+    <div class="content">
+      <header class="topbar">
+        <button id="menu-btn" aria-label="Menu">&#9776;</button>
+        <b id="page-title"></b>
+        <span id="sync"></span>
+        <button id="bell" class="bell" aria-label="Notifiche">🔔<span id="bell-n" hidden></span></button>
+      </header>
+      <main id="app-main" class="app-main"></main>
+    </div>
+  </div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
