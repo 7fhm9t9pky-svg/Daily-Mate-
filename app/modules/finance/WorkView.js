@@ -76,6 +76,9 @@ export class WorkView extends Component {
         <button class="add" data-newadv="1">+ Nuovo acconto</button>
         <button class="add" data-newjob="1">+ Crea un altro orario di lavoro</button>`;
     }
+    if (this.book.app?.isAdmin?.()) {
+      h += `<button class="add" data-toold="1">‹ Torna alla scheda originale (Switch Evolution / Cantiere)</button>`;
+    }
     this.body.innerHTML = h;
     const sc = this.el.closest('.app-main'); if (sc) sc.scrollTop = keep;
   }
@@ -85,6 +88,7 @@ export class WorkView extends Component {
   async #click(e) {
     const t = e.target, q = s => t.closest(s), w = this.w;
     if (q('[data-export]')) { new ExportPanel({ book: this.book, onClose: () => this.refresh() }).open(); return; }
+    if (q('[data-toold]')) { if (!confirm('Tornare alla scheda originale?')) return; delete this.w.mode; this.book.commit(); setTimeout(() => location.reload(), 900); return; }
     if (q('[data-newjob]')) return this.jobForm(null);
     const ej = q('[data-editjob]'); if (ej) { e.preventDefault(); return this.jobForm(w.jobs.find(j => j.id === ej.dataset.editjob)); }
     const nd = q('[data-newday]'); if (nd) return this.dayForm(w.jobs.find(j => j.id === nd.dataset.newday), null);

@@ -96,7 +96,7 @@ export class SheetView extends Component {
         h += '</div>';
       } else if (x.t === 'list') h += this.#list(x);
     }
-    if (this.i === 1) h = '<button class="xbtn" data-export="1">⇪ Esporta ore</button>' + h;
+    if (this.i === 1) h = '<button class="xbtn" data-export="1">⇪ Esporta ore</button>' + h + '<button class="add" data-tonew="1">Passa al nuovo sistema ore (nomi e paga scelti da te)</button>';
     const kids = this.book.childrenOf(this.i).filter(x => sheetVisible(this.book, x));
     h += `<h2 class="s">Sottopagine</h2><div class="sheet-grid">${kids.map(x => tileHTML(this.book, x)).join('')}<button class="sheet-tile add-tile" data-newsub="1"><h3>＋ Nuova sottopagina</h3><div class="k">Aggiungi una pagina dentro questa</div></button></div>`;
     if (this.book.isCustom(this.i)) h += `<button class="add" data-editpage="1">✎ Rinomina o elimina questa pagina</button>`;
@@ -172,6 +172,12 @@ export class SheetView extends Component {
   // ---------- interazione ----------
   #onClick(e) {
     if (e.target.closest('[data-export]')) { new ExportPanel({ book: this.book, onClose: () => this.refresh() }).open(); return; }
+    if (e.target.closest('[data-tonew]')) {
+      if (!confirm('Passare al nuovo sistema di Ore lavoro? Le ore della scheda originale restano salvate e puoi tornare indietro quando vuoi.')) return;
+      const st = this.book.st.work;
+      if (!st.jobs.length && confirm('Vuoi portare nel nuovo sistema le ore già inserite (Switch Evolution e Cantiere, con paga e acconti)?\n\nOK = sì, porta i dati. Annulla = parti da zero.')) this.book.importLegacyHours();
+      st.mode = 'new'; this.book.commit(); setTimeout(() => location.reload(), 900); return;
+    }
     const tl = e.target.closest('.sheet-tile[data-i]'); if (tl) { this.onOpen?.(+tl.dataset.i); return; }
     if (e.target.closest('[data-newsub]')) { askNewPage(this.title).then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: this.i })); }); return; }
     if (e.target.closest('[data-editpage]')) { this.#editPage(); return; }

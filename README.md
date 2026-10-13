@@ -171,3 +171,4 @@ Toccando "Apri chat e condivisi" si apre la pagina del gruppo: prima la **chat l
 - **Ore lavoro** (utenti normali): parte vuota. "Crea orario di lavoro" chiede nome e paga oraria standard; ogni giornata ha la sua paga modificabile. Ore totali, paghe, Paga tot., Acconti e Saldo residuo si calcolano come somma di tutti gli orari. L'amministratore tiene la scheda originale.
 - Trading 212 e Conto KE sono visibili solo all'amministratore.
 - **Attività → +**: grafico con tabella "etichetta + valore", dalle colonne di una pagina creata con il tasto +, oppure dalle ore/paga dei propri orari di lavoro (nomi semplici, nessuna lettera di cella).
+- **Amministratore**: nella scheda Ore lavoro originale il tasto "Passa al nuovo sistema ore" porta (se vuoi) Switch Evolution e Cantiere nel nuovo sistema con paga e acconti; dal nuovo sistema si torna all'originale con un tasto. Ogni orario si elimina da "modifica" accanto al suo nome.

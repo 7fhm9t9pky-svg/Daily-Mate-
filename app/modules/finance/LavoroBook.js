@@ -68,7 +68,28 @@ export class LavoroBook {
   }
 
   /** L'amministratore tiene la scheda Ore lavoro originale; gli altri usano quella che si costruiscono da soli. */
-  legacyHours() { return !!this.app?.isAdmin?.(); }
+  legacyHours() { return !!this.app?.isAdmin?.() && this.st.work.mode !== 'new'; }
+
+  /** Porta le ore della scheda originale (Switch Evolution e Cantiere) nel nuovo sistema: nome, paga e giornate. */
+  importLegacyHours() {
+    const s = this.D.sheets[1], iso = v => new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 864e5).toISOString().slice(0, 10);
+    const hm = v => { const m = Math.round(v * 60); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+    const U = () => Math.random().toString(36).slice(2, 8);
+    const blocks = [{ name: 'Switch Evolution', d: 'C', c: ['D', 'E', 'F', 'G'], note: 'I', pay: 'A10' }, { name: 'Cantiere', d: 'K', c: ['L', 'M', 'N', 'O'], note: null, pay: 'A13' }];
+    for (const bl of blocks) {
+      const m = /\*\s*(\d+(?:\.\d+)?)/.exec(String(s.cells[bl.pay] ?? ''));
+      const job = { id: U(), name: bl.name, rate: m ? Number(m[1]) : 0, rows: [] };
+      for (let r = 4; r <= 1000; r++) {
+        const d = this.val(1, bl.d + r);
+        const t = bl.c.map(c => { const v = this.val(1, c + r); return typeof v === 'number' ? hm(v) : ''; });
+        if (!t.some(Boolean)) continue;
+        job.rows.push({ id: U(), d: typeof d === 'number' ? iso(d) : '', a: t[0], b: t[1], c: t[2], e: t[3], rate: '', note: bl.note ? String(s.cells[bl.note + r] || '') : '' });
+      }
+      if (job.rows.length) { this.st.work.jobs.push(job); this.st.exp.sel['w:' + job.id] = true; }
+    }
+    const acc = Number(String(s.cells.A22 ?? '').replace(/^=/, ''));
+    if (acc > 0) this.st.work.adv.push({ id: U(), d: '', amount: acc, note: 'Acconti già versati' });
+  }
 
   isCustom(i) { return i >= this.base; }
   customDef(i) { return this.st.custom[i - this.base] || null; }
