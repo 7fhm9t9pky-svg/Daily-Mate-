@@ -59,9 +59,20 @@ export class FinanceModule extends Module {
 
   #save(st) {
     clearTimeout(this._timer);
-    this._timer = setTimeout(() => {
-      this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work });
-    }, 400);
+    this._pending = st;
+    if (!this._flushBound) {            // se chiudi o ricarichi la pagina subito, le modifiche non si perdono
+      this._flushBound = true;
+      const flush = () => this.#flush();
+      addEventListener('pagehide', flush);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    }
+    this._timer = setTimeout(() => this.#flush(), 400);
+  }
+
+  #flush() {
+    const st = this._pending; if (!st) return;
+    this._pending = null; clearTimeout(this._timer);
+    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work });
   }
 
   async getView(arg) {

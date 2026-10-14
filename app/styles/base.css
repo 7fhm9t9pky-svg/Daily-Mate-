@@ -277,3 +277,28 @@ svg circle{fill:var(--acc)}
 .te-x{border:0;background:none;color:var(--neg);font-size:16px;cursor:pointer;padding:0 6px}
 .modal select,.modal .fl input[type=text]{width:100%}
 .idle-bar{bottom:76px}
+
+/* ---- Modelli pronti, blocchi automatici, barre ---- */
+.tl.auto{cursor:default}
+.tl.auto:active{transform:none}
+.tl.auto small::after{content:" · auto";opacity:.55}
+.hint{margin:14px 4px 0;padding:11px 14px;border-radius:14px;background:var(--soft);color:var(--mu);font-size:13px;line-height:1.45}
+.empty-s{margin:2px 4px;padding:16px 14px;border-radius:14px;border:1.5px dashed var(--ln);color:var(--mu);font-size:13.5px;text-align:center;line-height:1.45}
+.bars{display:flex;flex-direction:column;gap:11px;background:var(--pa);border-radius:18px;padding:14px 16px;box-shadow:var(--sh)}
+.bar .bl{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;margin-bottom:5px}
+.bar .bl b{font-variant-numeric:tabular-nums;font-weight:600}
+.bar .bt{height:9px;border-radius:6px;background:var(--soft);overflow:hidden}
+.bar .bt i{display:block;height:100%;border-radius:6px;background:var(--acc)}
+.fin-sub{margin:0 4px 12px;color:var(--mu);font-size:13.5px;line-height:1.45}
+.fin-sub b{color:var(--ink)}
+.tpl-modal{max-height:88vh;display:flex;flex-direction:column}
+.tpl-sub{margin:-4px 0 10px;color:var(--mu);font-size:13.5px}
+.tpl-list{overflow:auto;margin:0 -4px;padding:0 4px 4px;flex:1}
+.tpl-g{margin:14px 2px 6px;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mu);font-weight:600}
+.tpl{display:flex;gap:12px;align-items:center;width:100%;text-align:left;margin-bottom:8px;padding:11px 12px;border-radius:16px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit;cursor:pointer}
+.tpl:active{transform:scale(.99)}
+.tpl:hover{border-color:var(--acc)}
+.tpl-i{font-size:26px;flex:none;width:40px;text-align:center}
+.tpl-t b{display:block;font-size:15px;font-weight:600}
+.tpl-t small{display:block;color:var(--mu);font-size:12.5px;line-height:1.35;margin-top:2px}
+.modal .fl select{width:100%;padding:11px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit}

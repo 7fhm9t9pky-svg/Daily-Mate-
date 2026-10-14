@@ -92,11 +92,28 @@ export function makeEngine(D, today) {
       if (c instanceof Err) return c; const b = A[c ? 1 : 2]; return b ? ev(b, sh) : (c ? true : false);
     }
     if (f === 'MID') { const s = Sx(ev(A[0], sh)), a = N(ev(A[1], sh)), l = N(ev(A[2], sh)); for (const x of [s, a, l]) if (x instanceof Err) return x; return s.substr(a - 1, l); }
+    const crit = cr => {                       // criterio tipo ">=10", "Bollette", "<>No"
+      const m = /^(<>|<=|>=|=|<|>)?(.*)$/.exec(Sx(cr)), op = m[1] || '=', cv = m[2], num = cv.trim() !== '' && !isNaN(cv), c = cmpf(op);
+      return x => num ? (typeof x === 'number' && c(x, Number(cv))) : (x != null && typeof x !== 'number' && c(String(x), cv));
+    };
+    const arr = x => Array.isArray(x) ? x : [x];
     if (f === 'SUMIF') {
-      const r = ev(A[0], sh), cr = ev(A[1], sh), sr = A[2] ? ev(A[2], sh) : r;
-      const m = /^(<>|<=|>=|=|<|>)?(.*)$/.exec(Sx(cr)), op = m[1] || '=', cv = m[2], num = cv.trim() !== '' && !isNaN(cv), cmpn = cmpf(op); let s = 0;
-      (Array.isArray(r) ? r : [r]).forEach((x, i) => { const ok = num ? (typeof x === 'number' && cmpn(x, Number(cv))) : (x != null && typeof x !== 'number' && cmpn(String(x), cv)); const y = at(sr, i); if (ok && typeof y === 'number') s += y; });
+      const r = ev(A[0], sh), cr = ev(A[1], sh), sr = A[2] ? ev(A[2], sh) : r, ok = crit(cr); let s = 0;
+      arr(r).forEach((x, i) => { const y = at(sr, i); if (ok(x) && typeof y === 'number') s += y; });
       return s;
+    }
+    if (f === 'COUNTIF') { const ok = crit(ev(A[1], sh)); return arr(ev(A[0], sh)).filter(ok).length; }
+    if (f === 'SUMIFS') {                      // SUMIFS(somma; intervallo1; criterio1; intervallo2; criterio2 ...)
+      const sr = arr(ev(A[0], sh)), tests = [];
+      for (let k = 1; k + 1 < A.length; k += 2) tests.push([arr(ev(A[k], sh)), crit(ev(A[k + 1], sh))]);
+      let s = 0; sr.forEach((y, i) => { if (typeof y === 'number' && tests.every(([r, ok]) => ok(r[i]))) s += y; });
+      return s;
+    }
+    if (f === 'DATE') { const [y, m, d] = A.map(a => N(ev(a, sh))); for (const x of [y, m, d]) if (x instanceof Err) return x; return Math.floor(Date.UTC(y, m - 1, d) / 864e5) + 25569; }
+    if (f === 'DAY' || f === 'MONTH' || f === 'YEAR') {
+      const x = N(ev(A[0], sh)); if (x instanceof Err) return x;
+      const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(x) * 864e5);
+      return f === 'DAY' ? d.getUTCDate() : f === 'MONTH' ? d.getUTCMonth() + 1 : d.getUTCFullYear();
     }
     const v = nums(A, sh); if (v instanceof Err) return v;
     switch (f) {

@@ -1,4 +1,5 @@
 import { makeEngine } from './engine.js';
+import { templateById } from './templates.js';
 
 export const MES = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 
@@ -51,6 +52,14 @@ export class LavoroBook {
 
   /** Crea scheda + disposizione di una pagina "a piacimento": titolo, totale e un elenco di voci. */
   #buildCustom(def) {
+    const tpl = def.tpl && templateById(def.tpl);
+    if (tpl) {                                                       // modello pronto: scheda + disposizione con calcoli automatici
+      const r = tpl.build(def.params || {}, def.name);
+      this.D.sheets.push({ name: 'P' + def.id, cells: r.cells, fmt: r.fmt, maxRow: 1000, maxCol: 12, freeze: null, cf: [], merges: [], widths: {} });
+      this.D.layout.push(r.layout);
+      def.cols = r.cols; def.head = r.head; def.icon = tpl.icon;
+      return this.D.sheets.length - 1;
+    }
     const cols = (def.cols && def.cols.length ? def.cols : ['Voce', 'Importo']).slice(0, 6);
     const L = i => String.fromCharCode(65 + i), last = L(cols.length - 1);
     const cells = { A1: def.name }, fmt = {};
@@ -100,9 +109,10 @@ export class LavoroBook {
   parentOf(i) { return this.isCustom(i) ? (this.customDef(i).parent ?? null) : null; }
   childrenOf(i) { return this.st.custom.map((d, k) => [d, this.base + k]).filter(([d, x]) => !d.deleted && (d.parent ?? null) === i).map(([, x]) => x); }
 
-  addCustom({ name, parent = null, cols, total }) {
+  addCustom({ name, parent = null, cols, total, tpl, params }) {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 4);
     const def = { id, name: String(name).trim().slice(0, 40) || 'Nuova pagina', parent, cols, total: !!total };
+    if (tpl) { def.tpl = tpl; def.params = params || {}; }
     this.st.custom.push(def);
     const idx = this.#buildCustom(def);
     this.#engine(); this.commit();

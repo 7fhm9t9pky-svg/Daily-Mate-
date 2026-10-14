@@ -1,7 +1,7 @@
 import { Component } from '../../ui/Component.js';
 import { dateFieldHTML, bindDateFields, readDate } from '../../ui/dateField.js';
 import { ExportPanel } from './ExportPanel.js';
-import { serialToDate, isDateFmt, isFormula, isDependent } from './LavoroBook.js';
+import { serialToDate, isDateFmt, isFormula, isDependent, todaySerial } from './LavoroBook.js';
 import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js';
 import { FormModal } from '../../ui/FormModal.js';
 
@@ -86,6 +86,8 @@ export class SheetView extends Component {
     for (const x of this.book.layoutFor(this.i)) {
       if (x.t === 'hero') h += this.#hero(x);
       else if (x.t === 'text') h += `<h2 class="s">${esc(this.disp(x.ta))}</h2>`;
+      else if (x.t === 'hint') h += `<p class="hint">💡 ${esc(x.text)}</p>`;
+      else if (x.t === 'bars') h += this.#bars(x);
       else if (x.t === 'chart') h += this.#chart(this.book.charts[x.i]);
       else if (x.t === 'stats') {
         if (x.title) h += `<h2 class="s">${esc(x.title)}</h2>`;
@@ -112,7 +114,20 @@ export class SheetView extends Component {
     return `<div class="hero" data-k="${id}"><h1>${esc(txt)}</h1></div>`;
   }
 
+  #bars(x) {
+    const bk = this.book;
+    const rows = x.items.map(([la, a]) => ({ l: this.disp(la), v: bk.num(this.i, a) || 0, t: this.disp(a) }));
+    const mx = x.max ? (bk.num(this.i, x.max) || 0) : Math.max(0, ...rows.map(r => r.v));
+    const vis = x.max ? rows : rows.filter(r => r.v > 0);
+    if (!vis.length || mx <= 0) return '';
+    return (x.title ? `<h2 class="s">${esc(x.title)}</h2>` : '') + '<div class="bars">' + vis.map(r =>
+      `<div class="bar"><div class="bl"><span>${esc(r.l)}</span><b>${esc(r.t)}</b></div><div class="bt"><i style="width:${Math.max(2, Math.min(100, r.v / mx * 100))}%"></i></div></div>`).join('') + '</div>';
+  }
+
   #tile(la, a, big) {
+    if (this.#locked(a, null)) {          // calcolo automatico: si vede ma non si tocca
+      return `<div class="tl auto${big ? ' big' : ''}"><small>${esc(la ? this.disp(la) : '')}</small><b>${esc(this.disp(a)) || '—'}</b></div>`;
+    }
     const id = this.reg({ f: [a], lab: { [a]: la ? this.disp(la) : a } });
     return `<div class="tl${big ? ' big' : ''}" data-k="${id}"><small>${esc(la ? this.disp(la) : '')}</small><b>${esc(this.disp(a)) || '—'}</b></div>`;
   }
@@ -140,13 +155,14 @@ export class SheetView extends Component {
         const cl = (x.cf ? this.#cfClass(bk.cn(c), r, v) : '') || '';
         return { c, txt: bk.fmt(v, s.fmt[a]), cl: cl + (v instanceof bk.Err ? ' e' : ''), l: typeof v === 'string' && v.length > 22 };
       }).filter(Boolean);
-      const id = this.reg({ f: flds, lab, title: top || this.title });
+      const id = this.reg({ f: flds, lab, title: top || this.title, choices: x.choices });
       const title = bk.fmt(kv, s.fmt[x.key + r]);
       if (chips.length <= 1) h += `<div class="it ln" data-k="${id}"><span>${esc(title) || '—'}</span><b>${chips[0] ? esc(chips[0].txt) : ''}</b></div>`;
       else h += `<div class="it" data-k="${id}">${cap ? `<small>${esc(cap)}</small>` : ''}<h4>${esc(title) || '—'}</h4><div class="gr">${chips.map(k => `<div class="c ${k.cl}${k.l ? ' w' : ''}"><small>${esc(lab[k.c])}</small><b>${esc(k.txt)}</b></div>`).join('')}</div></div>`;
     }
+    if (!rowsN.length && x.empty) h += `<p class="empty-s">${esc(x.empty)}</p>`;
     h += '</div>';
-    if (this.#freeRow(x, cols) !== null) h += `<button class="add" data-add="${this.reg({ x, cols, lab, top })}">${x.years ? '+ Aggiungi anno' : '+ Nuova voce'}</button>`;
+    if (this.#freeRow(x, cols) !== null) h += `<button class="add" data-add="${this.reg({ x, cols, lab, top })}">${esc(x.addLabel || (x.years ? '+ Aggiungi anno' : '+ Nuova voce'))}</button>`;
     return h;
   }
 
@@ -185,11 +201,11 @@ export class SheetView extends Component {
     const ad = e.target.closest('[data-add]');
     if (ad) {
       const g = this.REG[ad.dataset.add], r = this.#freeRow(g.x, g.cols);
-      this.#openForm(g.top || 'Nuova voce', g.cols.map(c => c + r), g.lab, false, { x: g.x, cols: g.cols, r }); return;
+      this.#openForm(g.top || 'Nuova voce', g.cols.map(c => c + r), g.lab, false, { x: g.x, cols: g.cols, r }, g.x.choices); return;
     }
     const k = e.target.closest('[data-k]'); if (!k) return;
     const g = this.REG[k.dataset.k];
-    this.#openForm(g.title || this.title, g.f, g.lab, g.f.length > 1);
+    this.#openForm(g.title || this.title, g.f, g.lab, g.f.length > 1, null, g.choices);
   }
 
   async #editPage() {
@@ -227,23 +243,33 @@ export class SheetView extends Component {
     return undefined;
   }
 
-  /** Per gli utenti le formule che dipendono da altre celle sono bloccate e invisibili (non per l'amministratore, non nelle loro pagine). */
+  /** Calcoli automatici: bloccati per gli utenti nelle schede di fabbrica, sempre bloccati nelle pagine create con i modelli. */
   #locked(a, add) {
-    if (this.book.app?.isOwner?.() || this.book.isCustom(this.i)) return false;
+    const custom = this.book.isCustom(this.i);
+    if (!custom && this.book.app?.isOwner?.()) return false;
     let raw = this.s.cells[a];
     if (raw == null && add) raw = this.#refFormula(add.x, a.replace(/\d+/, ''), add.r);
-    return isDependent(raw);
+    return custom ? isFormula(raw) : isDependent(raw);
   }
 
-  #openForm(title, flds, lab, clearable, add = null) {
+  #openForm(title, flds, lab, clearable, add = null, choices = null) {
     const s = this.s, bk = this.book, i = this.i;
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const fields = flds.map(a => {
       const raw = s.cells[a], f = s.fmt[a] || (raw == null && !add?.x.years ? this.#colFmt(a) : undefined), dm = isDateFmt(f) && !isFormula(raw);
-      const v = raw == null ? '' : dm && typeof raw === 'number' ? serialToDate(raw).toISOString().slice(0, 10) : typeof raw === 'number' ? String(raw).replace('.', ',') : raw;
-      const label = esc(lab[a] || lab[a.replace(/\d+/, '')] || a);
+      let v = raw == null ? '' : dm && typeof raw === 'number' ? serialToDate(raw).toISOString().slice(0, 10) : typeof raw === 'number' ? String(raw).replace('.', ',') : raw;
+      const col = a.replace(/\d+/, '');
+      if (raw == null && add) {                       // valori proposti per una voce nuova (oggi, "Da pagare"...)
+        const d = add.x.defaults?.[col];
+        if (d === '@today') { const n = new Date(); v = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`; } else if (d != null) v = d;
+      }
+      const label = esc(lab[a] || lab[col] || a);
       if (this.#locked(a, add)) return `<label class="fl"><span>${label}</span><input data-a="${a}" data-lock="1" type="text" value="" placeholder="Calcolato automaticamente" disabled><em></em></label>`;
+      if (choices?.[col] && !isFormula(raw)) {
+        const opts = ['', ...choices[col]]; if (v && !opts.includes(v)) opts.push(v);
+        return `<label class="fl"><span>${label}</span><select data-a="${a}" data-f="">${opts.map(o => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || 'Scegli…')}</option>`).join('')}</select><em></em></label>`;
+      }
       const input = dm ? dateFieldHTML({ iso: v, attrs: `data-a="${a}" data-f="${esc(f)}"` })
         : `<input data-a="${a}" data-f="" type="text" value="${esc(v)}" autocomplete="off">`;
       return `<label class="fl"><span>${label}</span>${input}<em></em></label>`;
@@ -257,7 +283,7 @@ export class SheetView extends Component {
     document.body.appendChild(overlay);
     bindDateFields(overlay);
     const close = () => overlay.remove();
-    const inputs = [...overlay.querySelectorAll('input[data-a]:not([data-lock])')];
+    const inputs = [...overlay.querySelectorAll('[data-a]:not([data-lock])')];
     const isDate = inp => inp.dataset.date === '1';
     const inVal = inp => isDate(inp) ? readDate(inp) : inp.value;
     const preview = inp => {
@@ -288,6 +314,10 @@ export class SheetView extends Component {
         if ((v === null && old == null) || v === old) continue;
         if (typeof v === 'string' && v[0] === '=') { try { bk.check(v); } catch { inp.closest('label').querySelector('em').textContent = 'Formula non valida'; return; } }
         changes.push([a, v, inp.dataset.f]);
+      }
+      if (add) {                                          // nessun dato inserito (solo i valori proposti): non creo una voce vuota
+        const isDef = ([a, v]) => { const d = add.x.defaults?.[a.replace(/\d+/, '')]; return d === '@today' ? v === todaySerial() : d != null && v === d; };
+        if (changes.every(isDef)) { close(); return; }
       }
       changes.forEach(([a, v, f]) => { bk.put(i, a, v); if (f && v !== null && !s.fmt[a]) bk.setFmt(i, a, f); });
       if (add) for (const c of add.cols) {              // riga nuova: le formule di calcolo (totali ecc.) arrivano da sole

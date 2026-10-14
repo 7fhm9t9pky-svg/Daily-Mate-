@@ -179,3 +179,11 @@ Toccando "Apri chat e condivisi" si apre la pagina del gruppo: prima la **chat l
 ## Disconnessione automatica e ruolo Visitatore
 - **Disconnessione**: dopo 3 minuti senza toccare, scrivere o scorrere, ogni utente viene disconnesso (negli ultimi 20 secondi compare l'avviso con "Resto qui"). Le modifiche in corso vengono salvate prima di uscire.
 - **Ruoli** (solo il proprietario li cambia, da Amministrazione → utente → Permessi): **Utente** (normale) e **Visitatore** (ha la pagina Amministrazione: personalizza l'interfaccia degli utenti normali e invia notifiche, ma vede Finanze come un utente normale, senza i dati personali del proprietario; non può modificare il proprietario, gli altri visitatori o i ruoli, né gli aggiornamenti del server).
+
+## Modelli pronti per le pagine (＋ Nuova pagina)
+In **Finanze → ＋ Nuova pagina** (e nelle sottopagine) si sceglie da una galleria di modelli: **Piano di risparmio** (obiettivo + data → quanto mettere da parte al mese e alla settimana), **Piano del mese 50/30/20**, **Calcolatore rata** (mutuo/finanziamento), **Abbonamenti**, **Spese di casa / personali / animali / auto**, **Scadenze e bollette**, **Prestiti che hai fatto** e **Debiti da restituire** (con interesse che matura giorno per giorno), **Lista della spesa**, **Peso e salute**, più la **Pagina vuota** con colonne scelte da te.
+- Le caselle con i calcoli (totali, "speso questo mese", rata, interessi…) sono **automatiche e bloccate**: si vedono ma non si possono toccare (portano la scritta "· auto"). L'utente inserisce solo i propri dati.
+- Le categorie si scelgono da un menu, la data di una nuova spesa è già quella di oggi, e se non scrivi nulla non si crea una voce vuota.
+- I modelli sono definiti in `app/modules/finance/templates.js`: per aggiungerne uno basta descrivere riquadri, colonne e formule. Il motore di calcolo (`engine.js`) ora conosce anche `DATE`, `DAY`, `MONTH`, `YEAR`, `COUNTIF` e `SUMIFS`.
+- Le pagine create dai modelli sono disponibili anche come grafico nella pagina Attività ("Dai dati di una mia pagina di Finanze").
+- Le modifiche alle pagine vengono salvate subito anche se si chiude o ricarica la pagina.

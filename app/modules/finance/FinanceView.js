@@ -1,6 +1,8 @@
 import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
 import { workTotals } from './WorkView.js';
+import { TEMPLATES, TEMPLATE_GROUPS, templateById } from './templates.js';
+import { parseNum } from '../../core/format.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -44,10 +46,48 @@ export function sheetVisible(book, i) {
   return allowed ? allowed.includes(i) : (app?.isOwner?.() ? true : BASE_SHEETS.includes(i));
 }
 
-/** Finestra "Nuova pagina": nome e struttura di base. Torna i dati o null. */
+/** Galleria "Nuova pagina": modelli pronti raggruppati + pagina vuota. Ritorna il modello scelto, 'blank' o null. */
+function pickTemplate(parentTitle) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const card = t => `<button class="tpl" data-t="${t.id}"><span class="tpl-i">${t.icon}</span><span class="tpl-t"><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span></button>`;
+    const groups = TEMPLATE_GROUPS.map(g => `<h4 class="tpl-g">${esc(g)}</h4>${TEMPLATES.filter(t => t.group === g).map(card).join('')}`).join('');
+    overlay.innerHTML = `<div class="modal tpl-modal"><h3>${parentTitle ? `Nuova sottopagina di “${esc(parentTitle)}”` : 'Cosa vuoi tenere sotto controllo?'}</h3>
+      <p class="tpl-sub">Scegli un modello pronto: i calcoli si fanno da soli, tu inserisci solo i dati.</p>
+      <div class="tpl-list">${groups}<h4 class="tpl-g">Tutto tuo</h4>
+      <button class="tpl" data-t="blank"><span class="tpl-i">✏️</span><span class="tpl-t"><b>Pagina vuota</b><small>Decidi tu come si chiamano le colonne (es. Voce, Importo, Data).</small></span></button></div>
+      <div class="modal-actions"><button class="btn" data-act="cancel">Annulla</button></div></div>`;
+    document.body.appendChild(overlay);
+    const close = v => { overlay.remove(); resolve(v); };
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay || e.target.closest('[data-act="cancel"]')) return close(null);
+      const b = e.target.closest('.tpl'); if (b) close(b.dataset.t === 'blank' ? 'blank' : templateById(b.dataset.t));
+    });
+  });
+}
+
+const serialOf = iso => iso ? Math.round(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 864e5) + 25569 : 0;
+
+/** Finestra "Nuova pagina": scelta del modello e poche domande. Torna i dati per addCustom o null. */
 export async function askNewPage(parentTitle) {
+  const t = await pickTemplate(parentTitle);
+  if (!t) return null;
+  if (t !== 'blank') {
+    const fields = [{ key: 'name', label: 'Nome della pagina', type: 'text' }, ...t.fields.map(f => ({ key: f.key, label: f.label, type: f.type }))];
+    const r = await FormModal.open({ title: `${t.icon} ${t.title}`, fields, values: { name: t.title } });
+    if (!r || r.__delete) return null;
+    if (!r.name.trim()) { alert('Scrivi il nome della pagina'); return null; }
+    const params = {};
+    for (const f of t.fields) {
+      const raw = r[f.key];
+      if (f.type === 'date') params[f.key] = serialOf(raw);
+      else { const n = String(raw ?? '').trim() === '' ? 0 : parseNum(raw); if (n === null) { alert(`“${f.label}”: scrivi un numero`); return null; } params[f.key] = n; }
+    }
+    return { name: r.name, tpl: t.id, params };
+  }
   const r = await FormModal.open({
-    title: parentTitle ? `Nuova sottopagina di “${parentTitle}”` : 'Nuova pagina',
+    title: 'Pagina vuota',
     fields: [
       { key: 'name', label: 'Nome della pagina', type: 'text' },
       { key: 'c0', label: 'Come chiami le voci (prima colonna)', type: 'text' },
@@ -67,12 +107,12 @@ export async function askNewPage(parentTitle) {
 export function tileHTML(book, i, first = false) {
   let label = '', value = '—';
   try {
-    if (book.isCustom(i)) { const d = book.customDef(i); if (d.total && d.cols.length > 1) [label, value] = ['Totale ' + d.cols[1].toLowerCase(), nice(book, i, 'K2')]; else label = d.cols.join(' · '); }
+    if (book.isCustom(i)) { const d = book.customDef(i); if (d.head) [label, value] = [d.head[0], nice(book, i, d.head[1])]; else if (d.total && d.cols.length > 1) [label, value] = ['Totale ' + d.cols[1].toLowerCase(), nice(book, i, 'K2')]; else label = d.cols.join(' · '); }
     else if (i === 1 && !book.legacyHours()) { const t = workTotals(book.st.work); [label, value] = book.st.work.jobs.length ? ['Ore totali', new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 }).format(t.ore) + ' h'] : ['Crea il tuo orario', '—']; }
     else [label, value] = SHEET_INFO[i] ? SHEET_INFO[i].head(book) : ['', '—'];
   } catch { /* scheda senza dati */ }
   return `<button class="sheet-tile${first ? ' first' : ''}" data-i="${i}">
-    <h3>${esc(sheetTitle(book, i))}</h3>
+    <h3>${book.isCustom(i) && book.customDef(i).icon ? book.customDef(i).icon + ' ' : ''}${esc(sheetTitle(book, i))}</h3>
     <div class="v">${esc(value || '—')}</div>
     <div class="k">${esc(label || '')}</div>
   </button>`;
@@ -87,8 +127,8 @@ export class FinanceView extends Component {
     el.className = 'page';
     const bk = this.book;
     const ids = bk.sheets.map((_, i) => i).filter(i => bk.parentOf(i) === null && sheetVisible(bk, i));
-    const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Crea una pagina tutta tua</div></button>';
-    el.innerHTML = `<div class="sheet-grid">${tiles}</div>`;
+    const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
+    el.innerHTML = `<p class="fin-sub">Tocca un quadretto per aprirlo. Con <b>＋ Nuova pagina</b> trovi modelli pronti: risparmio, casa, animali, auto, prestiti, scadenze…</p><div class="sheet-grid">${tiles}</div>`;
     el.querySelectorAll('.sheet-tile[data-i]').forEach(t => { t.onclick = () => this.onOpen(+t.dataset.i); });
     el.querySelector('[data-new]').onclick = async () => {
       const d = await askNewPage(null); if (!d) return;
