@@ -84,6 +84,7 @@ export class FinanceModule extends Module {
       return { async mount(parent) { parent.innerHTML = `<p class="empty">${e.message}. Riprova tra poco.</p>`; }, destroy() {} };
     }
     if (arg === 'config') return new ConfigView({ book, onBack: () => this.app.router.goTo('finance') });
+    if (arg === 'wealth') return new WealthView({ book, title: 'Conti e valute', onBack: () => this.app.router.goTo('finance/0'), onOpen: n => this.app.router.goTo('finance/' + n) });
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
     if (i === 0 && book.useWealth() && sheetVisible(book, 0)) {
       return new WealthView({ book, title: sheetTitle(book, 0), onBack: () => this.app.router.goTo('finance'), onOpen: n => this.app.router.goTo('finance/' + n) });

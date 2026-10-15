@@ -102,6 +102,7 @@ export class SheetView extends Component {
       } else if (x.t === 'list') h += this.#list(x);
     }
     if (this.i === 1) h = '<button class="xbtn" data-export="1">⇪ Esporta ore</button>' + h + '<button class="add" data-tonew="1">Passa al nuovo sistema ore (nomi e paga scelti da te)</button>';
+    if (this.i === 0 && this.book.app?.isOwner?.()) h = '<button class="add" data-wealth="1">💱 Conti e valute: scegli la valuta di ogni conto (euro, dollari, cripto…)</button>' + h;
     const kids = this.book.childrenOf(this.i).filter(x => sheetVisible(this.book, x));
     h += `<h2 class="s">Sottopagine</h2><div class="sheet-grid">${kids.map(x => tileHTML(this.book, x)).join('')}<button class="sheet-tile add-tile" data-newsub="1"><h3>＋ Nuova sottopagina</h3><div class="k">Aggiungi una pagina dentro questa</div></button></div>`;
     if (this.book.isCustom(this.i)) h += `<button class="add" data-editpage="1">✎ Rinomina o elimina questa pagina</button>`;
@@ -191,6 +192,7 @@ export class SheetView extends Component {
 
   // ---------- interazione ----------
   #onClick(e) {
+    if (e.target.closest('[data-wealth]')) { location.hash = '#/finance/wealth'; return; }
     if (e.target.closest('[data-export]')) { new ExportPanel({ book: this.book, onClose: () => this.refresh() }).open(); return; }
     if (e.target.closest('[data-tonew]')) {
       if (!confirm('Passare al nuovo sistema di Ore lavoro? Le ore della scheda originale restano salvate e puoi tornare indietro quando vuoi.')) return;
