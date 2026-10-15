@@ -5,3 +5,10 @@ server/.env
 
 # Dati di partenza personali: non pubblicarli
 server/seed/lavoro-data.json
+
+# File di diagnostica creati da avvia.bat
+avvia-log.txt
+server-log.txt
+ts-status.txt
+funnel-out.txt
+funnel-status.txt
