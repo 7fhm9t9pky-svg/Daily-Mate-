@@ -311,3 +311,5 @@ svg circle{fill:var(--acc)}
 .hint.warn{background:#fff3cd;color:#7a5b00}
 @media (prefers-color-scheme:dark){.hint.warn{background:#4a3b0a;color:#ffe08a}}
 .lead{margin:2px 4px 12px;color:var(--mu);font-size:13.5px;line-height:1.45}
+.sheet-tile.cfg-tile{background:var(--soft);box-shadow:none}
+.sheet-tile.cfg-tile .v{font-size:16px}

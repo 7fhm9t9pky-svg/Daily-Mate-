@@ -3,7 +3,8 @@ import { Module } from '../Module.js';
 import { LavoroBook, MES } from './LavoroBook.js';
 import { FinanceView, sheetTitle, sheetVisible } from './FinanceView.js';
 import { SheetView } from './SheetView.js';
-import { WorkView, dayHours, dayPay } from './WorkView.js';
+import { WorkView, dayHours, dayPay, setStdRate } from './WorkView.js';
+import { ConfigView } from './ConfigView.js';
 import { WealthView } from './WealthView.js';
 
 import { parseNum } from '../../core/format.js';
@@ -56,6 +57,7 @@ export class FinanceModule extends Module {
     const saved = await this.app.storage.get(STATE_KEY);
     this._book = new LavoroBook(seed, saved, st => this.#save(st));
     this._book.app = this.app;
+    setStdRate(this._book.st.cfg.rate);
     return this._book;
   }
 
@@ -74,7 +76,7 @@ export class FinanceModule extends Module {
   #flush() {
     const st = this._pending; if (!st) return;
     this._pending = null; clearTimeout(this._timer);
-    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth });
+    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg });
   }
 
   async getView(arg) {
@@ -82,6 +84,7 @@ export class FinanceModule extends Module {
     try { book = await this.book(); } catch (e) {
       return { async mount(parent) { parent.innerHTML = `<p class="empty">${e.message}. Riprova tra poco.</p>`; }, destroy() {} };
     }
+    if (arg === 'config') return new ConfigView({ book, onBack: () => this.app.router.goTo('finance') });
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
     if (i === 0 && book.useWealth() && sheetVisible(book, 0)) {
       return new WealthView({ book, title: sheetTitle(book, 0), onBack: () => this.app.router.goTo('finance'), onOpen: n => this.app.router.goTo('finance/' + n) });

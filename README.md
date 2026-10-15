@@ -197,3 +197,9 @@ In **Finanze → ＋ Nuova pagina** (e nelle sottopagine) si sceglie da una gall
 
 ## Accesso richiesto a ogni apertura
 La sessione non viene più ricordata dal browser: ogni volta che apri il link, premi "aggiorna" o riapri la pagina dopo averla chiusa, l'app chiede username e password. Si resta dentro solo mentre la pagina è aperta e usata (e vale sempre la disconnessione dopo 3 minuti di inattività). I ricaricamenti decisi dall'app stessa (nuova versione, cambio di ruolo) non chiedono di nuovo la password. Le modifiche non ancora salvate restano in coda e partono al primo accesso.
+
+## Configurazione (dentro Finanze)
+Il quadretto **⚙ Configurazione** raccoglie i dati che non cambiano mai, scritti una volta sola:
+- **Le mie banche e i miei conti**: le prime due danno il nome alle colonne di *Entrate e uscite* (al posto di BPM/TR, che sono quelle dell'amministratore) e tutte compaiono come suggerimenti quando si aggiunge un conto in *Patrimonio*.
+- **Paga oraria standard**: in *Ore lavoro* ogni lavoro e ogni giornata propongono "Standard"; con "Scrivo io" si scrive un'altra paga. Cambiando la paga standard si aggiornano da soli i lavori che la usano.
+- **Valuta preferita**: la valuta in cui *Patrimonio* mostra i totali.

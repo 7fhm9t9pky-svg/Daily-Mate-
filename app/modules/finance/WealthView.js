@@ -93,7 +93,7 @@ export class WealthView extends Component {
     const r = await FormModal.open({
       title: item ? 'Modifica' : KINDS[kind].add,
       fields: [
-        { key: 'name', label: kind === 'cash' ? 'Nome (es. Portafoglio, Salvadanaio)' : kind === 'crypto' ? 'Nome (es. Wallet, Binance)' : 'Nome (es. Conto BPM, Revolut, Trade Republic)', type: 'text' },
+        { key: 'name', suggest: kind === 'cash' || kind === 'crypto' ? [] : this.book.banks(), label: kind === 'cash' ? 'Nome (es. Portafoglio, Salvadanaio)' : kind === 'crypto' ? 'Nome (es. Wallet, Binance)' : 'Nome (es. Conto BPM, Revolut, Trade Republic)', type: 'text' },
         { key: 'kind', label: 'Che tipo di soldi sono?', type: 'select', options: Object.entries(KINDS).map(([k, K]) => ({ value: k, label: K.label })) },
         { key: 'cur', label: 'Valuta', type: 'select', optionsBy: { field: 'kind', map: { cash: FIAT_OPTS, digital: FIAT_OPTS, crypto: CRYPTO_OPTS } } },
         { key: 'amount', label: 'Quanto?', type: 'text' },

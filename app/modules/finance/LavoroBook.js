@@ -31,6 +31,7 @@ export class LavoroBook {
       jobs: saved?.jobs || {},                                   // lavori aggiunti a mano per "Esporta ore"
       custom: saved?.custom || [],
       work: Object.assign({ jobs: [], adv: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
+      cfg: Object.assign({ banks: null, rate: '' }, saved?.cfg),                  // Configurazione: banche, paga standard
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };
@@ -82,6 +83,15 @@ export class LavoroBook {
     this.D.layout.push(lay);
     return this.D.sheets.length - 1;
   }
+
+  /** Nome della banca n. k (0 = prima, 1 = seconda) come compare nelle colonne di "Entrate e uscite". */
+  bankName(k) {
+    const b = this.st.cfg.banks, owner = this.app?.isOwner?.();
+    return (b && b[k]) || (owner ? ['BPM', 'TR'] : ['Banca 1', 'Banca 2'])[k];
+  }
+
+  /** Nomi delle banche scritti dall'utente (servono anche come suggerimenti in Patrimonio). */
+  banks() { return (this.st.cfg.banks || (this.app?.isOwner?.() ? ['BPM', 'TR'] : [])).filter(Boolean); }
 
   /** Gli utenti (non l'amministratore) usano la pagina Patrimonio nuova al posto della scheda originale Home banking. */
   useWealth() { return !this.app?.isOwner?.(); }
@@ -164,6 +174,10 @@ export class LavoroBook {
       if (i === 2) L = L.filter(x => !(x.t === 'list' && x.title === 'Famiglia') && !(x.t === 'stats' && x.items?.[0]?.[0] === 'L4'));
     }
     return L.map(x => {
+      if (i === 5 && x.t === 'list' && x.labels) {
+        const a = this.bankName(0), b = this.bankName(1);
+        return { ...x, labels: { ...x.labels, B: 'Entrate ' + a, C: 'Entrate ' + b, E: 'Uscite ' + a, F: 'Uscite ' + b } };
+      }
       if (i === 4 && x.t === 'list' && x.title === 'Storico settimanale') return { ...x, title: 'Patrimonio settimana per settimana' };
       if (i === 4 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 25, sortKey: true, years: true };
       if (i === 5 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 18, sortKey: true, years: true };
@@ -197,7 +211,8 @@ export class LavoroBook {
     if (f === '0') return nf(0, 0, false).format(v);
     if (f === '0.00') return nf(2, 2, false).format(v);
     if (f === '#,##0.00') return nf(2, 2, true).format(v);
-    return String(Number(v.toPrecision(10))).replace('.', ',');
+    const r = Math.abs(v) >= 1 ? Math.round(v * 100) / 100 : Number(v.toPrecision(4));   // niente lunghe code di decimali
+    return String(r).replace('.', ',');
   }
 
   disp(i, a) { return this.fmt(this.shown(i, a), this.D.sheets[i].fmt[a]); }

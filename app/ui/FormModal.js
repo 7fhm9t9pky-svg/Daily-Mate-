@@ -26,6 +26,12 @@ export class FormModal {
         </div>`;
       document.body.appendChild(overlay);
       bindDateFields(overlay);
+      // campi che compaiono solo se un altro campo ha un certo valore (es. "Scrivo io" -> importo)
+      fields.filter(f => f.showIf).forEach(f => {
+        const dep = overlay.querySelector(`[name="${f.showIf.field}"]`), box = overlay.querySelector(`[name="${f.key}"]`)?.closest('label');
+        const upd = () => { box.hidden = dep.value !== f.showIf.value; };
+        dep.addEventListener('change', upd); upd();
+      });
       // campo a tendina che cambia le sue voci in base a un altro campo (es. tipo -> valuta)
       fields.filter(f => f.optionsBy).forEach(f => {
         const dep = overlay.querySelector(`[name="${f.optionsBy.field}"]`), sel = overlay.querySelector(`[name="${f.key}"]`);
@@ -77,6 +83,7 @@ export class FormModal {
     if (f.type === 'date') {
       return `<label class="field"><span>${esc(f.label)}</span>${dateFieldHTML({ iso: value, name: f.key })}</label>`;
     }
-    return `<label class="field"><span>${esc(f.label)}</span><input type="${f.type || 'text'}" name="${f.key}" value="${esc(value)}"></label>`;
+    const dl = f.suggest?.length ? `<datalist id="dl-${f.key}">${f.suggest.map(o => `<option value="${esc(o)}">`).join('')}</datalist>` : '';
+    return `<label class="field"><span>${esc(f.label)}</span><input type="${f.type || 'text'}" name="${f.key}" value="${esc(value)}"${dl ? ` list="dl-${f.key}" autocomplete="off"` : ''}>${dl}</label>`;
   }
 }
