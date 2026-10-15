@@ -44,15 +44,27 @@ export class WealthView extends Component {
     if (T.missing.length) h += `<p class="hint warn">⚠ Manca il cambio per: ${T.missing.map(esc).join(', ')}. Queste cifre non sono nel totale: tocca la valuta in “Cambi” e scrivi tu il valore.</p>`;
     h += `<p class="set-note">Il patrimonio totale = soldi disponibili + soldi già investiti (dalla pagina Investimenti). I crediti non sono nel totale finché non li incassi.</p>`;
 
+    const rowHTML = (it, K) => {
+      const conv = it.cur !== base ? convert(Number(it.amount) || 0, it.cur, base, rates, w.ov) : null;
+      return `<div class="it ln" data-item="${it.id}"><span>${esc(it.name || K.label)}${it.inv ? ' <em class="chip">da investire</em>' : ''}</span><b>${esc(money(Number(it.amount) || 0, it.cur))}${it.cur !== base ? `<small>${conv == null ? 'cambio mancante' : '≈ ' + esc(money(conv, base))}</small>` : ''}</b></div>`;
+    };
     for (const [kind, K] of Object.entries(KINDS)) {
       const rows = w.items.filter(i => i.kind === kind);
-      h += `<h2 class="s">${K.icon} ${esc(K.plural)}</h2><div class="lst">`;
-      for (const it of rows) {
-        const conv = it.cur !== base ? convert(Number(it.amount) || 0, it.cur, base, rates, w.ov) : null;
-        h += `<div class="it ln" data-item="${it.id}"><span>${esc(it.name || K.label)}${it.inv ? ' <em class="chip">da investire</em>' : ''}</span><b>${esc(money(Number(it.amount) || 0, it.cur))}${it.cur !== base ? `<small>${conv == null ? 'cambio mancante' : '≈ ' + esc(money(conv, base))}</small>` : ''}</b></div>`;
+      h += `<h2 class="s">${K.icon} ${esc(K.plural)}</h2>`;
+      if (kind === 'cash') {
+        h += `<div class="lst">${rows.map(it => rowHTML(it, K)).join('') || '<p class="empty-s">Niente qui per ora.</p>'}</div><button class="add" data-new="cash">+ ${esc(K.add)}</button>`;
+        continue;
       }
-      if (!rows.length) h += `<p class="empty-s">Niente qui per ora.</p>`;
-      h += `</div><button class="add" data-new="${kind}">+ ${esc(K.add)}</button>`;
+      // conti e cripto: raggruppati per banca, ogni banca puo' avere piu' conti (ognuno con la sua valuta)
+      const groups = new Map();
+      for (const it of rows) { const k = (it.bank || '').trim(); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
+      if (!rows.length) h += `<div class="lst"><p class="empty-s">Niente qui per ora.</p></div>`;
+      for (const [bank, list] of groups) {
+        let sub = 0, miss = false;
+        for (const it of list) { const v = convert(Number(it.amount) || 0, it.cur, base, rates, w.ov); if (v == null) miss = true; else sub += v; }
+        h += `<div class="bk"><div class="bk-h"><b>${esc(bank || (kind === 'crypto' ? 'Senza wallet o piattaforma' : 'Senza banca'))}</b><span>${list.length > 1 || bank ? esc(money(sub, base)) + (miss ? ' +?' : '') : ''}</span></div><div class="lst">${list.map(it => rowHTML(it, K)).join('')}</div>${bank ? `<button class="bk-add" data-new="${kind}" data-bank="${esc(bank)}">+ Altro conto in ${esc(bank)}</button>` : ''}</div>`;
+      }
+      h += `<button class="add" data-new="${kind}">+ ${esc(kind === 'crypto' ? K.add : 'Aggiungi un conto o una carta (anche di una nuova banca)')}</button>`;
     }
 
     h += `<h2 class="s">🤝 Crediti (soldi che ti devono)</h2><div class="lst">`;
@@ -80,7 +92,7 @@ export class WealthView extends Component {
 
   #click(e) {
     const q = s => e.target.closest(s), w = this.w;
-    const n = q('[data-new]'); if (n) return this.itemForm(null, n.dataset.new);
+    const n = q('[data-new]'); if (n) return this.itemForm(null, n.dataset.new, n.dataset.bank || '');
     const it = q('[data-item]'); if (it) return this.itemForm(w.items.find(x => x.id === it.dataset.item));
     if (q('[data-newcredit]')) return this.creditForm(null);
     const cr = q('[data-credit]'); if (cr) return this.creditForm(w.credits.find(x => x.id === cr.dataset.credit));
@@ -89,23 +101,26 @@ export class WealthView extends Component {
     if (q('[data-newsub]')) askNewPage(this.title).then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: 0 })); });
   }
 
-  async itemForm(item, kind = item?.kind) {
+  async itemForm(item, kind = item?.kind, bank = '') {
     const r = await FormModal.open({
       title: item ? 'Modifica' : KINDS[kind].add,
       fields: [
-        { key: 'name', suggest: kind === 'cash' || kind === 'crypto' ? [] : this.book.banks(), label: kind === 'cash' ? 'Nome (es. Portafoglio, Salvadanaio)' : kind === 'crypto' ? 'Nome (es. Wallet, Binance)' : 'Nome (es. Conto BPM, Revolut, Trade Republic)', type: 'text' },
+        { key: 'bank', suggest: this.book.banks(), label: 'Banca o piattaforma (lascia vuoto per i contanti)', type: 'text' },
+        { key: 'name', label: kind === 'cash' ? 'Nome (es. Portafoglio, Salvadanaio)' : kind === 'crypto' ? 'Nome (es. Wallet principale)' : 'Nome del conto (es. Conto corrente, Carta, Risparmio)', type: 'text' },
         { key: 'kind', label: 'Che tipo di soldi sono?', type: 'select', options: Object.entries(KINDS).map(([k, K]) => ({ value: k, label: K.label })) },
         { key: 'cur', label: 'Valuta', type: 'select', optionsBy: { field: 'kind', map: { cash: FIAT_OPTS, digital: FIAT_OPTS, crypto: CRYPTO_OPTS } } },
         { key: 'amount', label: 'Quanto?', type: 'text' },
         { key: 'inv', label: 'Sono soldi che posso investire', type: 'checkbox' }
       ],
-      values: item ? { ...item, amount: String(item.amount).replace('.', ',') } : { name: '', kind, cur: kind === 'crypto' ? 'BTC' : this.w.base, amount: '', inv: false }, allowDelete: !!item
+      values: item ? { ...item, amount: String(item.amount).replace('.', ',') } : { name: '', bank, kind, cur: kind === 'crypto' ? 'BTC' : this.w.base, amount: '', inv: false }, allowDelete: !!item
     });
     if (!r) return;
     if (r.__delete) { this.w.items = this.w.items.filter(x => x !== item); return this.save(); }
     const amount = String(r.amount).trim() === '' ? 0 : parseNum(r.amount);
     if (amount === null || amount < 0) { alert('Scrivi un importo valido (solo numeri)'); return; }
-    const data = { id: item?.id || uid(), name: r.name.trim(), kind: r.kind, cur: r.cur, amount, inv: !!r.inv };
+    const bankName = r.kind === 'cash' ? '' : r.bank.trim().slice(0, 30);
+    const data = { id: item?.id || uid(), name: r.name.trim(), bank: bankName, kind: r.kind, cur: r.cur, amount, inv: !!r.inv };
+    if (bankName && !this.book.banks().some(b => b.toLowerCase() === bankName.toLowerCase())) this.book.st.cfg.banks = [...this.book.banks(), bankName];   // la nuova banca va nella Configurazione
     if (item) Object.assign(item, data); else this.w.items.push(data);
     this.save();
   }

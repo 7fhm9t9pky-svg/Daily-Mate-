@@ -3,10 +3,11 @@ import { FormModal } from '../../ui/FormModal.js';
 import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { ExportPanel } from './ExportPanel.js';
 import { fmtShort, todayIso } from '../../core/dates.js';
+import { parseNum } from '../../core/format.js';
+import { num, jobPays, defaultPay, jobRate, dayRate, payOf, newId } from './pays.js';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-const num = v => { const n = Number(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : 0; };
 const eur = n => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n || 0);
 const hrs = n => new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 }).format(n || 0) + ' h';
 const mins = t => { if (!t) return null; const [h, m] = String(t).split(':').map(Number); return Number.isFinite(h) ? h * 60 + (m || 0) : null; };
@@ -20,12 +21,7 @@ export function dayHours(r) {
   return m / 60;
 }
 
-/** Paga oraria standard (si imposta in Finanze > Configurazione). Un lavoro senza paga sua usa questa. */
-let STD = 0;
-export const setStdRate = n => { STD = Number(n) > 0 ? Number(n) : 0; };
-export const stdRate = () => STD;
-export const jobRate = j => (j.std || !(num(j.rate) > 0)) ? STD : num(j.rate);
-export const dayRate = (job, r) => r.rate === '' || r.rate == null ? jobRate(job) : num(r.rate);
+export { jobRate, dayRate };
 export const dayPay = (job, r) => dayHours(r) * dayRate(job, r);
 
 export function workTotals(work) {
@@ -41,7 +37,7 @@ export function workTotals(work) {
  * (totali = somma di tutti gli orari), come nel foglio originale.
  */
 export class WorkView extends Component {
-  constructor({ book, title, onBack }) { super(); setStdRate(book.st.cfg.rate); this.book = book; this.title = title; this.onBack = onBack; this.w = book.st.work; }
+  constructor({ book, title, onBack }) { super(); this.book = book; this.title = title; this.onBack = onBack; this.w = book.st.work; }
 
   render() {
     const el = document.createElement('section');
@@ -68,14 +64,14 @@ export class WorkView extends Component {
         + T.jobs.map(x => tile('Paga ' + x.job.name, eur(x.paga))).join('')
         + tile('Paga tot.', eur(T.paga)) + tile('Acconti', eur(T.acconti)) + tile('Saldo residuo', eur(T.saldo)) + '</div>';
       for (const { job: j, ore } of T.jobs) {
-        h += `<h2 class="s">${esc(j.name)}</h2><p class="set-note">Paga oraria standard: <b>${eur(jobRate(j))}</b>${j.std || !(num(j.rate) > 0) ? ' (standard)' : ''} · ${hrs(ore)} · <a href="#" data-editjob="${j.id}">modifica</a></p><div class="lst">`;
+        h += `<h2 class="s">${esc(j.name)}</h2><p class="set-note">${jobPays(j).length ? 'Paghe: ' + jobPays(j).map(p => `${esc(p.name)} ${eur(num(p.rate))}`).join(' · ') : 'Nessuna paga: creala in Configurazione'} · ${hrs(ore)} · <a href="#" data-editjob="${j.id}">modifica</a> · <a href="#/finance/config">paghe</a></p><div class="lst">`;
         for (const r of j.rows.slice().sort((x, y) => (y.d || '').localeCompare(x.d || ''))) {
           const pr = (a, b) => (a && b ? `${a}–${b}` : a || b ? `${a || b}` : '—');
           h += `<div class="it" data-row="${j.id}|${r.id}"><h4>${fmtShort(r.d) || '—'}</h4><div class="gr">
             <div class="c"><small>Mattina</small><b>${esc(pr(r.a, r.b))}</b></div>
             <div class="c"><small>Pomeriggio</small><b>${esc(pr(r.c, r.e))}</b></div>
             <div class="c"><small>Ore giornata</small><b>${hrs(dayHours(r))}</b></div>
-            <div class="c"><small>Paga (${eur(dayRate(j, r))}/h)</small><b>${eur(dayPay(j, r))}</b></div>
+            <div class="c"><small>${esc(payOf(j, r)?.name || 'Paga scritta da te')} (${eur(dayRate(j, r))}/h)</small><b>${eur(dayPay(j, r))}</b></div>
             ${r.note ? `<div class="c w"><small>Note</small><b>${esc(r.note)}</b></div>` : ''}</div></div>`;
         }
         h += `</div><button class="add" data-newday="${j.id}">+ Nuovo giorno</button>`;
@@ -107,18 +103,21 @@ export class WorkView extends Component {
 
   async jobForm(job) {
     const r = await FormModal.open({
-      title: job ? 'Orario di lavoro' : 'Nuovo orario di lavoro',
-      fields: [{ key: 'name', label: 'Nome (es. azienda o cantiere)', type: 'text' },
-        { key: 'mode', label: 'Paga oraria', type: 'select', options: [{ value: 'std', label: STD > 0 ? `Standard (${eur(STD)} all'ora)` : 'Standard (da impostare in Configurazione)' }, { value: 'own', label: 'Scrivo io' }] },
-        { key: 'rate', label: 'Paga oraria di questo lavoro (€ all\'ora)', type: 'text', showIf: { field: 'mode', value: 'own' } }],
-      values: job ? { name: job.name, mode: job.std || !(num(job.rate) > 0) ? 'std' : 'own', rate: String(job.rate || '').replace('.', ',') } : { name: '', mode: 'std', rate: '' }, allowDelete: !!job
+      title: job ? 'Lavoro' : 'Nuovo lavoro',
+      fields: [{ key: 'name', label: 'Nome (es. Swievo, cantiere)', type: 'text' },
+        ...(job ? [] : [{ key: 'rate', label: 'Paga oraria (€ all\'ora) — poi potrai creare altre paghe in Configurazione', type: 'text' }])],
+      values: job ? { name: job.name } : { name: '', rate: '' }, allowDelete: !!job
     });
     if (!r) return;
     if (r.__delete) { if (!confirm(`Eliminare «${job.name}» con tutte le sue giornate?`)) return; this.w.jobs = this.w.jobs.filter(j => j !== job); delete this.book.st.exp.sel['w:' + job.id]; return this.save(); }
     if (!r.name.trim()) { alert('Scrivi un nome'); return; }
-    const std = r.mode === 'std';
-    if (!std && !(num(r.rate) > 0)) { alert('Scrivi la paga oraria (un numero maggiore di zero) oppure scegli Standard'); return; }
-    if (job) { job.name = r.name.trim(); job.std = std; job.rate = std ? '' : num(r.rate); } else { const id = uid(); this.w.jobs.push({ id, name: r.name.trim(), std, rate: std ? '' : num(r.rate), rows: [] }); this.book.st.exp.sel['w:' + id] = true; }
+    if (job) job.name = r.name.trim();
+    else {
+      const id = newId(), pid = newId(), rate = String(r.rate).trim() === '' ? 0 : parseNum(r.rate);
+      if (rate === null || rate < 0) { alert('Scrivi la paga come numero (es. 8,50)'); return; }
+      this.w.jobs.push({ id, name: r.name.trim(), pays: rate > 0 ? [{ id: pid, name: 'Paga ' + r.name.trim(), rate }] : [], defPay: rate > 0 ? pid : '', rows: [] });
+      this.book.st.exp.sel['w:' + id] = true;
+    }
     this.save();
   }
 
@@ -129,15 +128,15 @@ export class WorkView extends Component {
         { key: 'd', label: 'Giorno', type: 'date' },
         { key: 'a', label: 'Mattina · entrata', type: 'time' }, { key: 'b', label: 'Mattina · pausa (uscita)', type: 'time' },
         { key: 'c', label: 'Pomeriggio · entrata', type: 'time' }, { key: 'e', label: 'Pomeriggio · uscita', type: 'time' },
-        { key: 'mode', label: 'Paga di questa giornata', type: 'select', options: [{ value: 'job', label: `Standard (${eur(jobRate(job))} all'ora)` }, { value: 'own', label: 'Scrivo io' }] },
+        { key: 'mode', label: 'Paga di questa giornata', type: 'select', options: [...jobPays(job).map(p => ({ value: p.id, label: `${p.name} — ${eur(num(p.rate))} all'ora` })), { value: 'own', label: jobPays(job).length ? 'Scrivo io' : 'Scrivo io (nessuna paga creata: la crei in Configurazione)' }] },
         { key: 'rate', label: 'Paga oraria di questa giornata (€ all\'ora)', type: 'text', showIf: { field: 'mode', value: 'own' } },
         { key: 'note', label: 'Note', type: 'textarea' }
       ],
-      values: row ? { ...row, mode: row.rate === '' || row.rate == null ? 'job' : 'own', rate: String(row.rate ?? '').replace('.', ',') } : { d: todayIso(), a: '', b: '', c: '', e: '', mode: 'job', rate: '', note: '' }, allowDelete: !!row
+      values: row ? { ...row, mode: row.rate === '' || row.rate == null ? (payOf(job, row)?.id || 'own') : 'own', rate: String(row.rate ?? '').replace('.', ',') } : { d: todayIso(), a: '', b: '', c: '', e: '', mode: defaultPay(job)?.id || 'own', rate: '', note: '' }, allowDelete: !!row
     });
     if (!r) return;
     if (r.__delete) { job.rows = job.rows.filter(x => x !== row); return this.save(); }
-    const nr = { id: row?.id || uid(), d: r.d, a: r.a, b: r.b, c: r.c, e: r.e, rate: r.mode === 'own' && String(r.rate).trim() !== '' ? num(r.rate) : '', note: r.note.trim() };
+    const nr = { id: row?.id || uid(), d: r.d, a: r.a, b: r.b, c: r.c, e: r.e, rate: r.mode === 'own' && String(r.rate).trim() !== '' ? num(r.rate) : '', pay: r.mode === 'own' ? '' : r.mode, note: r.note.trim() };
     if (row) Object.assign(row, nr); else job.rows.push(nr);
     this.save();
   }

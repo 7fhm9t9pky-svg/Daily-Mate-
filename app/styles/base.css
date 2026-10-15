@@ -313,3 +313,8 @@ svg circle{fill:var(--acc)}
 .lead{margin:2px 4px 12px;color:var(--mu);font-size:13.5px;line-height:1.45}
 .sheet-tile.cfg-tile{background:var(--soft);box-shadow:none}
 .sheet-tile.cfg-tile .v{font-size:16px}
+.lnk{font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;margin-left:8px;color:var(--acc)}
+.bk{margin-bottom:12px}
+.bk-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:2px 4px 6px;font-size:14px}
+.bk-h span{font-variant-numeric:tabular-nums;color:var(--mu);font-size:13px}
+.bk-add{margin-top:6px;width:100%;padding:9px;border:0;background:none;color:var(--acc);font:inherit;font-weight:600;font-size:13px;cursor:pointer}

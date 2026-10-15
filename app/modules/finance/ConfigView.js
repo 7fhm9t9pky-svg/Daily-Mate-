@@ -1,7 +1,7 @@
 import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
 import { parseNum } from '../../core/format.js';
-import { setStdRate, stdRate } from './WorkView.js';
+import { num, jobPays, defaultPay, newId } from './pays.js';
 import { FIAT, curLabel } from './wealth.js';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -29,7 +29,7 @@ export class ConfigView extends Component {
   save() { this.book.commit(); this.refresh(); }
 
   refresh() {
-    const bk = this.book, banks = bk.banks(), keep = this.el.closest('.app-main')?.scrollTop ?? 0, std = stdRate();
+    const bk = this.book, banks = bk.banks(), keep = this.el.closest('.app-main')?.scrollTop ?? 0, jobs = bk.st.work.jobs;
     let h = `<p class="lead">Scrivi qui una volta sola i dati che non cambiano mai. Le altre pagine li usano da sole, così ti restano da compilare solo le cifre.</p>`;
 
     h += `<h2 class="s">🏦 Le mie banche e i miei conti</h2>
@@ -38,9 +38,17 @@ export class ConfigView extends Component {
     if (!banks.length) h += `<p class="empty-s">Nessuna banca scritta. In Entrate e uscite compaiono «Banca 1» e «Banca 2».</p>`;
     h += `</div><button class="add" data-newbank="1">+ Aggiungi una banca o un conto</button>`;
 
-    h += `<h2 class="s">💶 Paga oraria standard</h2>
-      <p class="set-note">In <b>Ore lavoro</b> ogni lavoro e ogni giornata propongono questa paga. Quando serve, scegli “Scrivo io” e scrivi una paga diversa.</p>
-      <div class="lst"><div class="it ln" data-rate="1"><span>La mia paga standard</span><b>${std > 0 ? esc(eur(std)) + ' all\'ora' : 'Non impostata'}</b></div></div>`;
+    h += `<h2 class="s">💶 Lavori e paghe</h2>
+      <p class="set-note">Crea i tuoi lavori e, per ognuno, tutte le paghe che ti servono (es. «Paga Swievo», «Paga Swievo 10%», «Paga cantiere»). In <b>Ore lavoro</b>, per ogni giornata, scegli la paga da un menu oppure scrivi un importo diverso.${bk.legacyHours() ? ' <b>Nota:</b> stai usando la scheda originale di Ore lavoro; le paghe valgono dopo il passaggio al nuovo sistema.' : ''}</p>`;
+    for (const j of jobs) {
+      h += `<h2 class="s">${esc(j.name)} <a href="#" class="lnk" data-editjob="${j.id}">modifica</a></h2><div class="lst">`;
+      const dp = defaultPay(j);
+      for (const p of jobPays(j)) h += `<div class="it ln" data-pay="${j.id}|${p.id}"><span>${esc(p.name)}${dp?.id === p.id && jobPays(j).length > 1 ? ' <em class="chip">di solito</em>' : ''}</span><b>${esc(eur(num(p.rate)))} all'ora</b></div>`;
+      if (!jobPays(j).length) h += `<p class="empty-s">Nessuna paga per questo lavoro.</p>`;
+      h += `</div><button class="add" data-newpay="${j.id}">+ Aggiungi una paga per «${esc(j.name)}»</button>`;
+    }
+    if (!jobs.length) h += `<p class="empty-s">Nessun lavoro. Aggiungi il primo con la sua paga oraria.</p>`;
+    h += `<button class="add" data-newjob="1">+ Aggiungi un lavoro</button>`;
 
     h += `<h2 class="s">🌍 Valuta preferita</h2>
       <p class="set-note">In <b>Patrimonio</b> tutti gli importi vengono convertiti in questa valuta. La puoi cambiare quando vuoi.</p>
@@ -51,10 +59,13 @@ export class ConfigView extends Component {
   }
 
   async #click(e) {
-    const q = s => e.target.closest(s);
+    const q = s => e.target.closest(s), w = this.book.st.work;
     if (q('[data-newbank]')) return this.bankForm(null);
     const b = q('[data-bank]'); if (b) return this.bankForm(+b.dataset.bank);
-    if (q('[data-rate]')) return this.rateForm();
+    if (q('[data-newjob]')) return this.jobForm(null);
+    const ej = q('[data-editjob]'); if (ej) { e.preventDefault(); return this.jobForm(w.jobs.find(j => j.id === ej.dataset.editjob)); }
+    const np = q('[data-newpay]'); if (np) return this.payForm(w.jobs.find(j => j.id === np.dataset.newpay), null);
+    const pp = q('[data-pay]'); if (pp) { const [jid, pid] = pp.dataset.pay.split('|'); const j = w.jobs.find(x => x.id === jid); return this.payForm(j, jobPays(j).find(p => p.id === pid)); }
   }
 
   async bankForm(i) {
@@ -73,19 +84,49 @@ export class ConfigView extends Component {
     this.c.banks = list; this.save();
   }
 
-  async rateForm() {
+  async jobForm(job) {
     const r = await FormModal.open({
-      title: 'Paga oraria standard',
-      fields: [{ key: 'v', label: 'Quanto prendi all\'ora? (€)', type: 'text' }],
-      values: { v: String(this.c.rate || '').replace('.', ',') }, allowDelete: stdRate() > 0
+      title: job ? 'Lavoro' : 'Nuovo lavoro',
+      fields: [{ key: 'name', label: 'Nome del lavoro (es. Swievo, cantiere)', type: 'text' },
+        ...(job ? [] : [{ key: 'pname', label: 'Nome della prima paga (facoltativo, es. Paga Swievo)', type: 'text' }, { key: 'rate', label: 'Quanto prendi all\'ora? (€)', type: 'text' }])],
+      values: job ? { name: job.name } : { name: '', pname: '', rate: '' }, allowDelete: !!job
     });
     if (!r) return;
-    if (r.__delete) this.c.rate = '';
+    const w = this.book.st.work;
+    if (r.__delete) { if (!confirm(`Eliminare «${job.name}» con tutte le sue giornate?`)) return; w.jobs = w.jobs.filter(j => j !== job); delete this.book.st.exp.sel['w:' + job.id]; return this.save(); }
+    const name = r.name.trim(); if (!name) { alert('Scrivi un nome'); return; }
+    if (job) job.name = name;
     else {
-      const v = String(r.v).trim() === '' ? 0 : parseNum(r.v);
-      if (v === null || v < 0) { alert('Scrivi un numero (es. 8,50)'); return; }
-      this.c.rate = v || '';
+      const rate = String(r.rate).trim() === '' ? 0 : parseNum(r.rate);
+      if (rate === null || rate < 0) { alert('Scrivi la paga come numero (es. 8,50)'); return; }
+      const pid = newId(), id = newId();
+      w.jobs.push({ id, name, pays: rate > 0 ? [{ id: pid, name: r.pname.trim() || 'Paga ' + name, rate }] : [], defPay: rate > 0 ? pid : '', rows: [] });
+      this.book.st.exp.sel['w:' + id] = true;
     }
-    setStdRate(this.c.rate); this.save();
+    this.save();
+  }
+
+  async payForm(job, pay) {
+    const isNew = !pay;
+    const r = await FormModal.open({
+      title: isNew ? `Nuova paga per ${job.name}` : 'Paga',
+      fields: [{ key: 'name', label: 'Nome della paga (es. Paga ' + job.name + ' 10%)', type: 'text' }, { key: 'rate', label: 'Quanto prendi all\'ora? (€)', type: 'text' },
+        { key: 'def', label: 'È la paga che propongo di solito', type: 'checkbox' }],
+      values: isNew ? { name: '', rate: '', def: !jobPays(job).length } : { name: pay.name, rate: String(pay.rate).replace('.', ','), def: defaultPay(job)?.id === pay.id }, allowDelete: !isNew
+    });
+    if (!r) return;
+    if (r.__delete) {
+      const used = job.rows.filter(x => (x.rate === '' || x.rate == null) && x.pay === pay.id).length;
+      if (!confirm(`Eliminare «${pay.name}»?${used ? ` Le ${used} giornate che la usano mantengono l'importo già calcolato.` : ''}`)) return;
+      job.rows.forEach(x => { if ((x.rate === '' || x.rate == null) && (x.pay === pay.id || (!x.pay && defaultPay(job)?.id === pay.id))) { x.rate = num(pay.rate); x.pay = ''; } });
+      job.pays = jobPays(job).filter(p => p !== pay);
+      if (job.defPay === pay.id) job.defPay = job.pays[0]?.id || '';
+      return this.save();
+    }
+    const name = r.name.trim() || 'Paga ' + job.name, rate = parseNum(r.rate);
+    if (rate === null || rate <= 0) { alert('Scrivi la paga come numero maggiore di zero (es. 8,50)'); return; }
+    if (isNew) { pay = { id: newId(), name, rate }; job.pays = [...jobPays(job), pay]; } else { pay.name = name; pay.rate = rate; }
+    if (r.def || !job.defPay) job.defPay = pay.id;
+    this.save();
   }
 }

@@ -3,7 +3,7 @@ import { Module } from '../Module.js';
 import { LavoroBook, MES } from './LavoroBook.js';
 import { FinanceView, sheetTitle, sheetVisible } from './FinanceView.js';
 import { SheetView } from './SheetView.js';
-import { WorkView, dayHours, dayPay, setStdRate } from './WorkView.js';
+import { WorkView, dayHours, dayPay } from './WorkView.js';
 import { ConfigView } from './ConfigView.js';
 import { WealthView } from './WealthView.js';
 
@@ -57,7 +57,6 @@ export class FinanceModule extends Module {
     const saved = await this.app.storage.get(STATE_KEY);
     this._book = new LavoroBook(seed, saved, st => this.#save(st));
     this._book.app = this.app;
-    setStdRate(this._book.st.cfg.rate);
     return this._book;
   }
 

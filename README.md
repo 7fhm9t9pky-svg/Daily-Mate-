@@ -203,3 +203,9 @@ Il quadretto **⚙ Configurazione** raccoglie i dati che non cambiano mai, scrit
 - **Le mie banche e i miei conti**: le prime due danno il nome alle colonne di *Entrate e uscite* (al posto di BPM/TR, che sono quelle dell'amministratore) e tutte compaiono come suggerimenti quando si aggiunge un conto in *Patrimonio*.
 - **Paga oraria standard**: in *Ore lavoro* ogni lavoro e ogni giornata propongono "Standard"; con "Scrivo io" si scrive un'altra paga. Cambiando la paga standard si aggiornano da soli i lavori che la usano.
 - **Valuta preferita**: la valuta in cui *Patrimonio* mostra i totali.
+
+## Paghe con nome e conti per banca
+
+- **Configurazione → Lavori e paghe**: ogni lavoro ha una o più paghe con nome (es. "Paga Swievo", "Paga Swievo 10%", "Paga cantiere"), con una "di solito". Si creano, modificano ed eliminano da lì; eliminando una paga le giornate già inserite mantengono l'importo calcolato.
+- **Ore lavoro**: per ogni giornata si sceglie una delle paghe del lavoro oppure "Scrivo io".
+- **Patrimonio**: ogni banca può avere più conti, ognuno con la sua valuta (euro, dollari, cripto…). Il totale si vede nella valuta preferita (euro o dollari, ecc.).

@@ -2,6 +2,7 @@ import { makeEngine } from './engine.js';
 import { templateById } from './templates.js';
 import { wealthTotals } from './wealth.js';
 import { applyLabels } from './labels.js';
+import { migratePays } from './pays.js';
 
 export const MES = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 
@@ -35,6 +36,7 @@ export class LavoroBook {
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };
+    migratePays(this.st.work, this.st.cfg.rate);                    // paghe nominate per lavoro
     this.onChange = onChange;
     this.base = this.D.sheets.length;                              // le schede "di fabbrica" sono le prime
     this.st.custom.forEach(def => this.#buildCustom(def));
