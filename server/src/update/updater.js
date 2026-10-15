@@ -18,14 +18,14 @@ const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 const CFG_FILE = path.join(DATA_DIR, 'update.json');
 const API = process.env.UPDATE_API_BASE || 'https://api.github.com';
 const ZIPBASE = process.env.UPDATE_ZIP_BASE || 'https://codeload.github.com';
-const EVERY_MS = Number(process.env.UPDATE_EVERY_MS) || 3 * 60 * 1000;
+const EVERY_MS = Number(process.env.UPDATE_EVERY_MS) || 60 * 1000;
 
 /** Solo questi percorsi possono essere aggiornati (tutto il resto viene ignorato). */
 const ALLOWED = [/^app\//, /^server\/src\//, /^server\/scripts\//, /^server\/package\.json$/, /^server\/seed\/lavoro-template\.json$/, /^README\.md$/, /^TAILSCALE\.md$/, /^server\/\.env\.example$/];
 
 let cfg = { repo: '', branch: 'main', sha: '', lastCheck: 0, lastError: '', lastApplied: 0 };
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')) }; } catch { /* prima volta */ }
-let busy = false, timer = null;
+let busy = false, timer = null, etag = '';
 
 function saveCfg() {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(CFG_FILE, JSON.stringify(cfg, null, 2)); } catch (e) { console.error('update.json:', e.message); }
@@ -88,12 +88,14 @@ export async function check() {
   if (busy || !cfg.repo) return status();
   busy = true;
   try {
-    const res = await fetch(`${API}/repos/${cfg.repo}/commits/${cfg.branch}`, { headers: { 'User-Agent': 'daily-mate', Accept: 'application/vnd.github+json' } });
+    const res = await fetch(`${API}/repos/${cfg.repo}/commits/${cfg.branch}`, { headers: { 'User-Agent': 'daily-mate', Accept: 'application/vnd.github+json', ...(etag && cfg.sha ? { 'If-None-Match': etag } : {}) } });
+    if (res.status === 304) { cfg.lastError = ''; cfg.lastCheck = Date.now(); saveCfg(); busy = false; return status(); }   // nessuna novita': non conta nel limite di GitHub
     if (res.status === 404) throw new Error('Repository non trovato (deve essere pubblico e il nome scritto come utente/nome)');
     if (res.status === 403 || res.status === 429) throw new Error('GitHub ha limitato le richieste, riprovo piu\' tardi');
     if (!res.ok) throw new Error(`GitHub ha risposto ${res.status}`);
     const sha = (await res.json()).sha;
     if (sha && sha !== cfg.sha) await apply(sha);
+    etag = res.headers.get('etag') || '';
     cfg.lastError = '';
   } catch (e) { cfg.lastError = e.message || String(e); console.error('Aggiornamento:', cfg.lastError); }
   cfg.lastCheck = Date.now(); saveCfg(); busy = false;

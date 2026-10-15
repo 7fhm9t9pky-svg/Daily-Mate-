@@ -1,10 +1,10 @@
 import { reloadKeepingLogin } from './AuthClient.js';
 /**
- * Ogni minuto chiede al server il numero di versione. Se cambia (cioe' e' arrivato un
+ * Ogni 15 secondi chiede al server il numero di versione. Se cambia (cioe' e' arrivato un
  * aggiornamento) mostra una barra "Nuova versione disponibile" con il pulsante Aggiorna.
  */
 export class UpdateWatcher {
-  constructor(everyMs = 60000) { this.every = everyMs; this.current = null; this.shown = false; }
+  constructor(everyMs = 15000) { this.every = everyMs; this.current = null; this.shown = false; }
 
   start() {
     this.check();
