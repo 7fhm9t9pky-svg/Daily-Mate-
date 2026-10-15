@@ -158,7 +158,7 @@ export class SheetView extends Component {
         if (v == null || v === '') return null;
         if (isFormula(raw) && v === 0) return null;
         const cl = (x.cf ? this.#cfClass(bk.cn(c), r, v) : '') || '';
-        return { c, txt: bk.fmt(v, s.fmt[a]), cl: cl + (v instanceof bk.Err ? ' e' : ''), l: typeof v === 'string' && v.length > 22 };
+        return { c, txt: bk.inCur(this.i, a, v) ?? bk.fmt(v, s.fmt[a]), cl: cl + (v instanceof bk.Err ? ' e' : ''), l: typeof v === 'string' && v.length > 22 };
       }).filter(Boolean);
       const id = this.reg({ f: flds, lab, title: top || this.title, choices: x.choices });
       const title = bk.fmt(kv, s.fmt[x.key + r]);

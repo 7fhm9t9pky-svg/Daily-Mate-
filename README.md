@@ -212,3 +212,4 @@ Il quadretto **⚙ Configurazione** raccoglie i dati che non cambiano mai, scrit
 
 - **Valuta nelle caselle**: ogni casella importo (es. Entrate BPM) ha un menu per scegliere la valuta; il valore viene convertito in euro per i totali e riaprendo la casella ritrovi l'importo originale.
 - **Nuovi modelli di pagina**: Viaggi, Regali e feste, Salute, Figli, Sport e hobby, Telefono e tecnologia, Spesa alimentare, Tasse e documenti.
+- Le caselle scritte in un'altra valuta mostrano l'importo originale (es. 100,00 USD); i totali restano in euro.

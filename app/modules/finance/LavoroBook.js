@@ -1,6 +1,6 @@
 import { makeEngine } from './engine.js';
 import { templateById } from './templates.js';
-import { wealthTotals } from './wealth.js';
+import { wealthTotals, money } from './wealth.js';
 import { applyLabels } from './labels.js';
 import { migratePays } from './pays.js';
 
@@ -218,7 +218,13 @@ export class LavoroBook {
     return String(r).replace('.', ',');
   }
 
-  disp(i, a) { return this.fmt(this.shown(i, a), this.D.sheets[i].fmt[a]); }
+  /** Se la casella e' stata scritta in un'altra valuta, la mostra cosi' (es. "100,00 US$") invece dell'importo in euro. */
+  inCur(i, a, v) {
+    const c = this.st.cur[i + '!' + a];
+    return c && typeof v === 'number' && Math.abs(c.eur - v) < 0.005 ? money(c.amt, c.cur) : null;
+  }
+
+  disp(i, a) { const v = this.shown(i, a); return this.inCur(i, a, v) ?? this.fmt(v, this.D.sheets[i].fmt[a]); }
 
   /** Numero di una cella (0 se vuota/errore): comodo per Home e riepiloghi. */
   num(i, a) { const v = this.val(i, a); return typeof v === 'number' ? v : null; }
