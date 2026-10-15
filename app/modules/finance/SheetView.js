@@ -4,6 +4,7 @@ import { ExportPanel } from './ExportPanel.js';
 import { serialToDate, isDateFmt, isFormula, isDependent, todaySerial } from './LavoroBook.js';
 import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js';
 import { FormModal } from '../../ui/FormModal.js';
+import { SHEET_HELP } from './labels.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
@@ -83,6 +84,7 @@ export class SheetView extends Component {
     this.REG = [];
     const keep = this.el.closest('.app-main')?.scrollTop ?? 0;
     const s = this.s; let h = '';
+    if (!this.book.isCustom(this.i) && SHEET_HELP[this.i]) h += `<p class="lead">${esc(SHEET_HELP[this.i])}</p>`;
     for (const x of this.book.layoutFor(this.i)) {
       if (x.t === 'hero') h += this.#hero(x);
       else if (x.t === 'text') h += `<h2 class="s">${esc(this.disp(x.ta))}</h2>`;

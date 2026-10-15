@@ -1,5 +1,7 @@
 import { makeEngine } from './engine.js';
 import { templateById } from './templates.js';
+import { wealthTotals } from './wealth.js';
+import { applyLabels } from './labels.js';
 
 export const MES = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 
@@ -29,11 +31,13 @@ export class LavoroBook {
       jobs: saved?.jobs || {},                                   // lavori aggiunti a mano per "Esporta ore"
       custom: saved?.custom || [],
       work: Object.assign({ jobs: [], adv: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
+      wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };
     this.onChange = onChange;
     this.base = this.D.sheets.length;                              // le schede "di fabbrica" sono le prime
     this.st.custom.forEach(def => this.#buildCustom(def));
+    applyLabels(this.D.sheets);                                    // nomi piu' chiari (le modifiche dell'utente restano valide)
     for (const k in this.st.ov) {
       const [i, a] = k.split('|'); const c = this.D.sheets[i]?.cells;
       if (!c) continue;
@@ -78,6 +82,20 @@ export class LavoroBook {
     this.D.layout.push(lay);
     return this.D.sheets.length - 1;
   }
+
+  /** Gli utenti (non l'amministratore) usano la pagina Patrimonio nuova al posto della scheda originale Home banking. */
+  useWealth() { return !this.app?.isOwner?.(); }
+
+  /** Cambi delle valute dal server (una volta sola per sessione). */
+  loadRates() {
+    this._rates ||= this.app.auth.api('/api/rates').then(r => (this.rates = r)).catch(() => { this._rates = null; return null; });
+    return this._rates;
+  }
+
+  /** Capitale gia' investito (somma della colonna "Soldi investiti" nella scheda Investimenti). */
+  investedEur() { let t = 0; for (let r = 2; r <= 1000; r++) { const v = this.num(2, 'C' + r); if (v != null) t += v; } return t; }
+
+  wealthTotals(base) { return wealthTotals(this.st.wealth, this.rates, base || this.st.wealth.base, this.investedEur()); }
 
   /** L'amministratore tiene la scheda Ore lavoro originale; gli altri usano quella che si costruiscono da soli. */
   legacyHours() { return !!this.app?.isOwner?.() && this.st.work.mode !== 'new'; }
@@ -146,6 +164,7 @@ export class LavoroBook {
       if (i === 2) L = L.filter(x => !(x.t === 'list' && x.title === 'Famiglia') && !(x.t === 'stats' && x.items?.[0]?.[0] === 'L4'));
     }
     return L.map(x => {
+      if (i === 4 && x.t === 'list' && x.title === 'Storico settimanale') return { ...x, title: 'Patrimonio settimana per settimana' };
       if (i === 4 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 25, sortKey: true, years: true };
       if (i === 5 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 18, sortKey: true, years: true };
       return x;

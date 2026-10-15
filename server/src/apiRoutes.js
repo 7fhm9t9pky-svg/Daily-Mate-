@@ -2,6 +2,7 @@ import { db } from './db.js';
 import * as notif from './notify/notifyService.js';
 import { groupRoutes } from './groups/groupRoutes.js';
 import { chatRoutes } from './groups/chatRoutes.js';
+import { getRates } from './rates/rates.js';
 
 /**
  * Tabella delle rotte "nuove" (notifiche, push, amministrazione). Ogni rotta e' una
@@ -31,6 +32,7 @@ export function cleanUi(u = {}) {
 }
 
 export const apiRoutes = [
+  { method: 'get', path: '/api/rates', auth: 'user', handler: async () => ({ json: await getRates() }) },
   ...groupRoutes,
   ...chatRoutes,
   // ---- notifiche dell'utente

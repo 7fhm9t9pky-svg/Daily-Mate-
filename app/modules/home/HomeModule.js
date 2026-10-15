@@ -28,7 +28,7 @@ class HomeView extends Component {
       </div>
       ${show('activity') ? `<div class="sec-head"><h2 class="s">${esc(nm('activity', 'Attività'))}</h2><button class="link" data-go="activity">Vedi tutto ›</button></div>
       <div class="mini-grid" id="h-mini"></div>` : ''}
-      ${show('finance') ? `<h2 class="s">Punteggi</h2>
+      ${show('finance') ? `<h2 class="s">Come va questo mese</h2>
       <div class="score" id="h-score"></div>` : ''}`;
     el.querySelectorAll('[data-go]').forEach(b => { b.onclick = () => this.m.app.router.goTo(b.dataset.go); });
     el.querySelector('#h-score')?.addEventListener('click', e => {
@@ -66,9 +66,9 @@ class HomeView extends Component {
     const d = fin ? await fin.getHomeData(this.month) : null;
     const mese = MES[this.month][0].toUpperCase() + MES[this.month].slice(1);
     const fbox = this.el.querySelector('#h-fin');
-    if (fbox) { if (!d) fbox.innerHTML = '<div class="sub">Foglio non disponibile</div>';
+    if (fbox) { if (!d) fbox.innerHTML = '<div class="sub">Dati non disponibili</div>';
     else fbox.innerHTML = `<div class="sub">Patrimonio totale</div><div class="v">${eur(d.patrimonio)}</div>
-      <div class="sub">Investimenti: ${pct(d.investPct)}</div>`; }
+      <div class="sub">Andamento investimenti: ${pct(d.investPct)}</div>`; }
 
     const act = this.m.app.registry.get('activity'), mini = this.el.querySelector('#h-mini');
     const cards = act && mini ? await act.getCards(8) : [];
@@ -87,7 +87,7 @@ class HomeView extends Component {
     const scoreBox = this.el.querySelector('#h-score');
     if (scoreBox) scoreBox.innerHTML = `
       <div class="score-head"><button data-m="-1" aria-label="Mese precedente">‹</button><b>${mese}</b><button data-m="1" aria-label="Mese successivo">›</button></div>
-      ${row('Risparmio', sc.risparmio, true)}${row('Patrimonio', sc.patrimonio, true)}${row('Uscite', sc.uscite, false)}`;
+      ${row('Risparmiato sulle entrate', sc.risparmio, true)}${row('Patrimonio rispetto al mese prima', sc.patrimonio, true)}${row('Uscite rispetto al mese prima', sc.uscite, false)}`;
   }
 }
 

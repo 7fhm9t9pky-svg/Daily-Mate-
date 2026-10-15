@@ -187,3 +187,10 @@ In **Finanze → ＋ Nuova pagina** (e nelle sottopagine) si sceglie da una gall
 - I modelli sono definiti in `app/modules/finance/templates.js`: per aggiungerne uno basta descrivere riquadri, colonne e formule. Il motore di calcolo (`engine.js`) ora conosce anche `DATE`, `DAY`, `MONTH`, `YEAR`, `COUNTIF` e `SUMIFS`.
 - Le pagine create dai modelli sono disponibili anche come grafico nella pagina Attività ("Dai dati di una mia pagina di Finanze").
 - Le modifiche alle pagine vengono salvate subito anche se si chiude o ricarica la pagina.
+
+## Patrimonio con più valute (per gli utenti)
+- Per gli utenti la scheda **Patrimonio** (ex "Home banking") è nuova: si scrive dove sono i soldi — **Contanti**, **Conti e carte (digitale)** o **Cripto** — con la valuta di ogni importo (euro, dollari, sterline… per contanti e digitale; BTC, ETH… per le cripto) e se sono **soldi che si possono investire**. Niente più somme automatiche "a sorpresa": contanti e investibili sono scelti dall'utente.
+- In alto si sceglie la **valuta in cui vedere tutto**: ogni importo viene convertito e il patrimonio totale si ricalcola.
+- **Cambi**: il server li scarica da solo (valute dalla BCE tramite frankfurter.dev, cripto da CoinGecko, entrambi gratuiti e senza chiave) al massimo ogni 6 ore e li salva in `server/data/rates.json`. Se internet non c'è usa l'ultimo valore salvato. Ogni cambio si può **scrivere a mano** (riquadro "Cambi" → tocca la valuta); quello scritto a mano ha la precedenza.
+- Patrimonio totale = soldi disponibili + soldi già investiti (somma di "Soldi investiti" nella pagina Investimenti). I crediti sono mostrati a parte.
+- L'amministratore mantiene la scheda originale, con nomi più chiari (`app/modules/finance/labels.js`: una tabella "cella, testo vecchio, testo nuovo" facile da modificare). Sotto il titolo di ogni pagina c'è ora una riga che spiega a cosa serve.

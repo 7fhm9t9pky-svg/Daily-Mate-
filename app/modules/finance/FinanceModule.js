@@ -3,6 +3,7 @@ import { LavoroBook, MES } from './LavoroBook.js';
 import { FinanceView, sheetTitle, sheetVisible } from './FinanceView.js';
 import { SheetView } from './SheetView.js';
 import { WorkView, dayHours, dayPay } from './WorkView.js';
+import { WealthView } from './WealthView.js';
 
 import { parseNum } from '../../core/format.js';
 
@@ -72,7 +73,7 @@ export class FinanceModule extends Module {
   #flush() {
     const st = this._pending; if (!st) return;
     this._pending = null; clearTimeout(this._timer);
-    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work });
+    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth });
   }
 
   async getView(arg) {
@@ -81,6 +82,9 @@ export class FinanceModule extends Module {
       return { async mount(parent) { parent.innerHTML = `<p class="empty">${e.message}. Riprova tra poco.</p>`; }, destroy() {} };
     }
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
+    if (i === 0 && book.useWealth() && sheetVisible(book, 0)) {
+      return new WealthView({ book, title: sheetTitle(book, 0), onBack: () => this.app.router.goTo('finance'), onOpen: n => this.app.router.goTo('finance/' + n) });
+    }
     if (i === 1 && !book.legacyHours() && sheetVisible(book, 1)) {
       return new WorkView({ book, title: sheetTitle(book, 1), onBack: () => this.app.router.goTo('finance') });
     }
@@ -143,7 +147,8 @@ export class FinanceModule extends Module {
         const monthly = fn => Array.from({ length: 12 }, (_, m) => fn(m)).map((v, m) => v == null ? null : { l: MESI3[m], v, m }).filter(Boolean);
         if (def.key === 'patrimonio') {
           out.points = monthly(m => b.num(4, 'B' + (29 + m)));
-          out.head = { value: b.num(0, 'A6'), sub: 'oggi' };
+          if (b.useWealth()) await b.loadRates();
+          out.head = { value: b.useWealth() ? b.wealthTotals('EUR').total : b.num(0, 'A6'), sub: 'oggi' };
         } else if (def.key === 'investimenti') {
           for (let r = 51; r <= 1000; r++) { const v = b.num(4, 'B' + r); if (v != null) out.points.push({ l: b.fmt(b.shown(4, 'A' + r), b.sheets[4].fmt['A' + r] || 'd/m'), v }); }
           out.points = out.points.slice(-14);
@@ -183,6 +188,8 @@ export class FinanceModule extends Module {
       const s = (b.num(5, x + r) || 0) + (b.num(5, y + r) || 0);
       return s || null;
     };
+    let patr = b.num(0, 'A6');
+    if (b.useWealth()) { await b.loadRates(); patr = b.wealthTotals('EUR').total; }      // utenti: dalla pagina Patrimonio
     const P = Array.from({ length: 12 }, (_, k) => b.num(4, 'B' + (29 + k)));
     const E = Array.from({ length: 12 }, (_, k) => tot(22 + k, 'D', 'B', 'C'));
     const U = Array.from({ length: 12 }, (_, k) => tot(22 + k, 'G', 'E', 'F'));
@@ -195,7 +202,7 @@ export class FinanceModule extends Module {
       uscite: m > 0 ? pct(U[m], U[m - 1]) : null
     };
     return {
-      patrimonio: b.num(0, 'A6'), investPct: b.num(2, 'K2'),
+      patrimonio: patr, investPct: b.num(2, 'K2'),
       series: { patrimonio: P, investimenti: W.slice(-14), entrate: E, uscite: U },
       month: { entrate: E[m], uscite: U[m] }, scores
     };

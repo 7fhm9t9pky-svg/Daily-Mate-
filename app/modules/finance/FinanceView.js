@@ -3,6 +3,7 @@ import { FormModal } from '../../ui/FormModal.js';
 import { workTotals } from './WorkView.js';
 import { TEMPLATES, TEMPLATE_GROUPS, templateById } from './templates.js';
 import { parseNum } from '../../core/format.js';
+import { money } from './wealth.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -14,11 +15,11 @@ function nice(b, i, a) {
 
 /** Per ogni scheda del foglio: titolo del quadretto e "numero chiave" da mostrare. */
 const SHEET_INFO = [
-  { title: 'Home banking', head: b => [nice(b, 0, 'A5'), nice(b, 0, 'A6')] },
+  { title: 'Patrimonio', head: b => [nice(b, 0, 'A5'), nice(b, 0, 'A6')] },
   { title: 'Ore lavoro', head: b => [nice(b, 1, 'A1'), nice(b, 1, 'A2')] },
-  { title: 'Investimenti aperti', head: b => [nice(b, 2, 'K1'), nice(b, 2, 'K2')] },
+  { title: 'Investimenti in corso', head: b => [nice(b, 2, 'K1'), nice(b, 2, 'K2')] },
   { title: 'PIM azionario', head: b => [nice(b, 3, 'F1'), nice(b, 3, 'F2')] },
-  { title: 'Amministrazione', head: b => {
+  { title: 'Patrimonio nel tempo', head: b => {
     for (let r = 40; r >= 29; r--) { const v = b.num(4, 'B' + r); if (v != null) return [b.disp(4, 'A' + r), nice(b, 4, 'B' + r)]; }
     return ['Patrimonio mensile', '—'];
   } },
@@ -28,7 +29,7 @@ const SHEET_INFO = [
     return ['Totale ricaricato', b.fmt(t, '#,##0.00')];
   } },
   { title: 'Conto KE', head: b => [nice(b, 7, 'C1'), nice(b, 7, 'C2')] },
-  { title: 'Risparmio', head: b => [nice(b, 8, 'F1'), nice(b, 8, 'F2')] }
+  { title: 'Risparmi', head: b => [nice(b, 8, 'F1'), nice(b, 8, 'F2')] }
 ];
 
 export const BASE_SHEETS = [0, 1, 2, 4, 5, 8];   // cosa vede un utente normale se l'amministratore non ha scelto altro
@@ -108,6 +109,7 @@ export function tileHTML(book, i, first = false) {
   let label = '', value = '—';
   try {
     if (book.isCustom(i)) { const d = book.customDef(i); if (d.head) [label, value] = [d.head[0], nice(book, i, d.head[1])]; else if (d.total && d.cols.length > 1) [label, value] = ['Totale ' + d.cols[1].toLowerCase(), nice(book, i, 'K2')]; else label = d.cols.join(' · '); }
+    else if (i === 0 && book.useWealth()) [label, value] = ['Patrimonio totale', money(book.wealthTotals().total, book.st.wealth.base)];
     else if (i === 1 && !book.legacyHours()) { const t = workTotals(book.st.work); [label, value] = book.st.work.jobs.length ? ['Ore totali', new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 }).format(t.ore) + ' h'] : ['Crea il tuo orario', '—']; }
     else [label, value] = SHEET_INFO[i] ? SHEET_INFO[i].head(book) : ['', '—'];
   } catch { /* scheda senza dati */ }
@@ -129,6 +131,7 @@ export class FinanceView extends Component {
     const ids = bk.sheets.map((_, i) => i).filter(i => bk.parentOf(i) === null && sheetVisible(bk, i));
     const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
     el.innerHTML = `<p class="fin-sub">Tocca un quadretto per aprirlo. Con <b>＋ Nuova pagina</b> trovi modelli pronti: risparmio, casa, animali, auto, prestiti, scadenze…</p><div class="sheet-grid">${tiles}</div>`;
+    if (bk.useWealth()) bk.loadRates().then(() => { const t = el.querySelector('.sheet-tile[data-i="0"] .v'); if (t) t.textContent = money(bk.wealthTotals().total, bk.st.wealth.base); });
     el.querySelectorAll('.sheet-tile[data-i]').forEach(t => { t.onclick = () => this.onOpen(+t.dataset.i); });
     el.querySelector('[data-new]').onclick = async () => {
       const d = await askNewPage(null); if (!d) return;

@@ -302,3 +302,12 @@ svg circle{fill:var(--acc)}
 .tpl-t b{display:block;font-size:15px;font-weight:600}
 .tpl-t small{display:block;color:var(--mu);font-size:12.5px;line-height:1.35;margin-top:2px}
 .modal .fl select{width:100%;padding:11px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit}
+
+/* ---- Patrimonio ---- */
+.w-cur{margin:10px 4px 12px}
+.w-cur select{padding:9px 10px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit;max-width:100%}
+.it.ln>b small{display:block;font-weight:400;color:var(--mu);font-size:11.5px}
+.chip{font-style:normal;font-size:10.5px;font-weight:600;letter-spacing:.02em;padding:2px 7px;border-radius:9px;background:var(--soft);color:var(--acc);vertical-align:middle;margin-left:4px}
+.hint.warn{background:#fff3cd;color:#7a5b00}
+@media (prefers-color-scheme:dark){.hint.warn{background:#4a3b0a;color:#ffe08a}}
+.lead{margin:2px 4px 12px;color:var(--mu);font-size:13.5px;line-height:1.45}

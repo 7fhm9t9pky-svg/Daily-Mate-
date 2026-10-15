@@ -26,6 +26,17 @@ export class FormModal {
         </div>`;
       document.body.appendChild(overlay);
       bindDateFields(overlay);
+      // campo a tendina che cambia le sue voci in base a un altro campo (es. tipo -> valuta)
+      fields.filter(f => f.optionsBy).forEach(f => {
+        const dep = overlay.querySelector(`[name="${f.optionsBy.field}"]`), sel = overlay.querySelector(`[name="${f.key}"]`);
+        const fill = want => {
+          const opts = f.optionsBy.map[dep.value] || [], keep = want ?? sel.value;
+          sel.innerHTML = opts.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('');
+          if (opts.some(o => o.value === keep)) sel.value = keep;
+        };
+        dep.addEventListener('change', () => fill());
+        fill(values[f.key]);
+      });
 
       const close = result => { overlay.remove(); resolve(result); };
       overlay.querySelector('[data-act="cancel"]').onclick = () => close(null);
@@ -54,7 +65,7 @@ export class FormModal {
     if (f.type === 'select') {
       return `<label class="field"><span>${esc(f.label)}</span>
         <select name="${f.key}">
-          ${f.options.map(o => `<option value="${esc(o.value)}" ${o.value === value ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}
+          ${(f.options || []).map(o => `<option value="${esc(o.value)}" ${o.value === value ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}
         </select></label>`;
     }
     if (f.type === 'textarea') {
