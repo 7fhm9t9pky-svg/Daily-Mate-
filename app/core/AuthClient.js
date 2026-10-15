@@ -1,11 +1,27 @@
-const TOKEN_KEY = 'dailymate_auth_token';
+const TOKEN_KEY = 'dailymate_auth_token';      // vecchio posto del token: non si usa piu', lo cancello
+const HAND_KEY = 'dm_reload_handoff';          // passaggio una tantum per i ricaricamenti decisi dall'app
+
+let current = null;
+
+/**
+ * Ricarica la pagina SENZA chiedere di nuovo la password: solo per i ricaricamenti decisi dall'app
+ * (aggiornamento, cambio di ruolo...). Se invece l'utente apre il link o preme "aggiorna" la password si richiede.
+ */
+export function reloadKeepingLogin() {
+  try { if (current?.token) sessionStorage.setItem(HAND_KEY, current.token); } catch { /* si rifara' il login */ }
+  location.reload();
+}
 
 /** Parla con /api/auth del server: signup, login, sessione corrente, logout. */
 export class AuthClient {
   constructor(baseUrl = '') {
     this.baseUrl = baseUrl;
-    this.token = localStorage.getItem(TOKEN_KEY);
+    // Per sicurezza la sessione vive solo nella pagina aperta: se apri il link, aggiorni o chiudi e riapri, si rifa' l'accesso.
+    try { localStorage.removeItem(TOKEN_KEY); } catch { /* niente */ }
+    this.token = null;
+    try { this.token = sessionStorage.getItem(HAND_KEY); sessionStorage.removeItem(HAND_KEY); } catch { /* niente */ }
     this.user = null;
+    current = this;
   }
 
   isAuthenticated() { return !!this.token; }
@@ -58,12 +74,11 @@ export class AuthClient {
   logout() {
     this.token = null;
     this.user = null;
-    localStorage.removeItem(TOKEN_KEY);
+    try { sessionStorage.removeItem(HAND_KEY); } catch { /* niente */ }
   }
 
   #setSession(data) {
     this.token = data.token;
     this.user = data.user;
-    localStorage.setItem(TOKEN_KEY, data.token);
   }
 }

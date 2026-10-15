@@ -1,3 +1,4 @@
+import { reloadKeepingLogin } from './AuthClient.js';
 /**
  * Ogni minuto chiede al server il numero di versione. Se cambia (cioe' e' arrivato un
  * aggiornamento) mostra una barra "Nuova versione disponibile" con il pulsante Aggiorna.
@@ -26,7 +27,7 @@ export class UpdateWatcher {
     const el = document.createElement('div');
     el.className = 'update-bar';
     el.innerHTML = '<span>Nuova versione disponibile</span><button class="btn primary">Aggiorna</button>';
-    el.querySelector('button').onclick = () => location.reload();
+    el.querySelector('button').onclick = () => reloadKeepingLogin();
     document.body.appendChild(el);
   }
 }

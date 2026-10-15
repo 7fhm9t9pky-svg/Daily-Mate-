@@ -194,3 +194,6 @@ In **Finanze → ＋ Nuova pagina** (e nelle sottopagine) si sceglie da una gall
 - **Cambi**: il server li scarica da solo (valute dalla BCE tramite frankfurter.dev, cripto da CoinGecko, entrambi gratuiti e senza chiave) al massimo ogni 6 ore e li salva in `server/data/rates.json`. Se internet non c'è usa l'ultimo valore salvato. Ogni cambio si può **scrivere a mano** (riquadro "Cambi" → tocca la valuta); quello scritto a mano ha la precedenza.
 - Patrimonio totale = soldi disponibili + soldi già investiti (somma di "Soldi investiti" nella pagina Investimenti). I crediti sono mostrati a parte.
 - L'amministratore mantiene la scheda originale, con nomi più chiari (`app/modules/finance/labels.js`: una tabella "cella, testo vecchio, testo nuovo" facile da modificare). Sotto il titolo di ogni pagina c'è ora una riga che spiega a cosa serve.
+
+## Accesso richiesto a ogni apertura
+La sessione non viene più ricordata dal browser: ogni volta che apri il link, premi "aggiorna" o riapri la pagina dopo averla chiusa, l'app chiede username e password. Si resta dentro solo mentre la pagina è aperta e usata (e vale sempre la disconnessione dopo 3 minuti di inattività). I ricaricamenti decisi dall'app stessa (nuova versione, cambio di ruolo) non chiedono di nuovo la password. Le modifiche non ancora salvate restano in coda e partono al primo accesso.

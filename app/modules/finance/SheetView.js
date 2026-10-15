@@ -4,6 +4,7 @@ import { ExportPanel } from './ExportPanel.js';
 import { serialToDate, isDateFmt, isFormula, isDependent, todaySerial } from './LavoroBook.js';
 import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js';
 import { FormModal } from '../../ui/FormModal.js';
+import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { SHEET_HELP } from './labels.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -195,7 +196,7 @@ export class SheetView extends Component {
       if (!confirm('Passare al nuovo sistema di Ore lavoro? Le ore della scheda originale restano salvate e puoi tornare indietro quando vuoi.')) return;
       const st = this.book.st.work;
       if (!st.jobs.length && confirm('Vuoi portare nel nuovo sistema le ore già inserite (Switch Evolution e Cantiere, con paga e acconti)?\n\nOK = sì, porta i dati. Annulla = parti da zero.')) this.book.importLegacyHours();
-      st.mode = 'new'; this.book.commit(); setTimeout(() => location.reload(), 900); return;
+      st.mode = 'new'; this.book.commit(); setTimeout(() => reloadKeepingLogin(), 900); return;
     }
     const tl = e.target.closest('.sheet-tile[data-i]'); if (tl) { this.onOpen?.(+tl.dataset.i); return; }
     if (e.target.closest('[data-newsub]')) { askNewPage(this.title).then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: this.i })); }); return; }

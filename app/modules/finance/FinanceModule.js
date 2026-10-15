@@ -1,3 +1,4 @@
+import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { Module } from '../Module.js';
 import { LavoroBook, MES } from './LavoroBook.js';
 import { FinanceView, sheetTitle, sheetVisible } from './FinanceView.js';
@@ -175,7 +176,7 @@ export class FinanceModule extends Module {
     const book = await this.book();
     book.resetState();
     await this.app.storage.remove(STATE_KEY);
-    location.reload();
+    reloadKeepingLogin();
   }
 
   /** Numeri e serie per la Home (patrimonio, investimenti, entrate/uscite, punteggi del mese). */

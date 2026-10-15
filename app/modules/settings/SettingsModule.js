@@ -1,3 +1,4 @@
+import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { Module } from '../Module.js';
 import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
@@ -107,7 +108,7 @@ class SettingsView extends Component {
         if (!confirm('Ripristinare questo backup? I dati attuali verranno sostituiti da quelli del file.')) return;
         const res = await fetch('/api/kv', { method: 'PUT', headers: hdr, body: JSON.stringify({ data: o.data }) });
         if (!res.ok) throw new Error();
-        location.reload();
+        reloadKeepingLogin();
       } catch { bkMsg('File di backup non valido.'); }
     });
     // notifiche

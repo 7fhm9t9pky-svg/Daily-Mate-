@@ -1,5 +1,6 @@
 import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
+import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { ExportPanel } from './ExportPanel.js';
 import { fmtShort, todayIso } from '../../core/dates.js';
 
@@ -88,7 +89,7 @@ export class WorkView extends Component {
   async #click(e) {
     const t = e.target, q = s => t.closest(s), w = this.w;
     if (q('[data-export]')) { new ExportPanel({ book: this.book, onClose: () => this.refresh() }).open(); return; }
-    if (q('[data-toold]')) { if (!confirm('Tornare alla scheda originale?')) return; delete this.w.mode; this.book.commit(); setTimeout(() => location.reload(), 900); return; }
+    if (q('[data-toold]')) { if (!confirm('Tornare alla scheda originale?')) return; delete this.w.mode; this.book.commit(); setTimeout(() => reloadKeepingLogin(), 900); return; }
     if (q('[data-newjob]')) return this.jobForm(null);
     const ej = q('[data-editjob]'); if (ej) { e.preventDefault(); return this.jobForm(w.jobs.find(j => j.id === ej.dataset.editjob)); }
     const nd = q('[data-newday]'); if (nd) return this.dayForm(w.jobs.find(j => j.id === nd.dataset.newday), null);
