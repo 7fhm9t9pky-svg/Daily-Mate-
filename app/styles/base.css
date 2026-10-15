@@ -318,3 +318,5 @@ svg circle{fill:var(--acc)}
 .bk-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:2px 4px 6px;font-size:14px}
 .bk-h span{font-variant-numeric:tabular-nums;color:var(--mu);font-size:13px}
 .bk-add{margin-top:6px;width:100%;padding:9px;border:0;background:none;color:var(--acc);font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+
+.cur-row{display:flex;gap:8px}.cur-row input{flex:1;min-width:0}.cur-row select{width:auto!important;max-width:42%;flex:none}

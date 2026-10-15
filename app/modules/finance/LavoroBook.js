@@ -31,6 +31,7 @@ export class LavoroBook {
       ov: saved?.ov || {}, fm: saved?.fm || {},
       jobs: saved?.jobs || {},                                   // lavori aggiunti a mano per "Esporta ore"
       custom: saved?.custom || [],
+      cur: saved?.cur || {},                                     // valuta scelta per le singole caselle importo: 'foglio!cella' -> {cur, amt, eur}
       work: Object.assign({ jobs: [], adv: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
       cfg: Object.assign({ banks: null, rate: '' }, saved?.cfg),                  // Configurazione: banche, paga standard
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
@@ -238,5 +239,5 @@ export class LavoroBook {
   put(i, a, v) { this.eng.set(this.D.sheets[i].name, a, v); this.st.ov[i + '|' + a] = v; }
   setFmt(i, a, f) { this.D.sheets[i].fmt[a] = f; this.st.fm[i + '|' + a] = f; }
   commit() { this.onChange?.(this.st); }
-  resetState() { this.st.ov = {}; this.st.fm = {}; this.onChange?.(this.st); }
+  resetState() { this.st.ov = {}; this.st.fm = {}; this.st.cur = {}; this.onChange?.(this.st); }
 }

@@ -6,6 +6,7 @@ import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js
 import { FormModal } from '../../ui/FormModal.js';
 import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { SHEET_HELP } from './labels.js';
+import { FIAT, CRYPTO, curLabel, convert } from './wealth.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
@@ -233,6 +234,14 @@ export class SheetView extends Component {
     return t;
   }
 
+  /** Casella "importo" (formato con decimali): qui si puo' scegliere la valuta. */
+  #isMoney(a) {
+    const col = a.replace(/\d/g, ''), M = f => f === '0.00' || f === '#,##0.00';
+    if (M(this.s.fmt[a])) return true;
+    for (const k in this.s.fmt) if (k.replace(/\d/g, '') === col && M(this.s.fmt[k])) return true;
+    return false;
+  }
+
   #colFmt(a) {
     const col = a.replace(/\d/g, '');
     for (const k in this.s.fmt) if (k.replace(/\d/g, '') === col && isDateFmt(this.s.fmt[k])) return this.s.fmt[k];
@@ -275,6 +284,12 @@ export class SheetView extends Component {
         const opts = ['', ...choices[col]]; if (v && !opts.includes(v)) opts.push(v);
         return `<label class="fl"><span>${label}</span><select data-a="${a}" data-f="">${opts.map(o => `<option value="${esc(o)}"${o === v ? ' selected' : ''}>${esc(o || 'Scegli…')}</option>`).join('')}</select><em></em></label>`;
       }
+      if (!dm && !isFormula(raw) && !(typeof raw === 'string' && raw) && this.#isMoney(a)) {   // casella importo: con scelta della valuta
+        const sv = bk.st.cur[i + '!' + a], same = sv && typeof raw === 'number' && Math.abs(sv.eur - raw) < 0.005;
+        const cur = same ? sv.cur : 'EUR', shown = same ? String(sv.amt).replace('.', ',') : v;
+        const opts = [...FIAT, ...CRYPTO].map(c => `<option value="${c}"${c === cur ? ' selected' : ''}>${esc(curLabel(c))}</option>`).join('');
+        return `<label class="fl"><span>${label}</span><div class="cur-row"><input data-a="${a}" data-f="" data-money="1" type="text" inputmode="decimal" value="${esc(shown)}" autocomplete="off"><select data-cur="${a}" aria-label="Valuta">${opts}</select></div><em></em></label>`;
+      }
       const input = dm ? dateFieldHTML({ iso: v, attrs: `data-a="${a}" data-f="${esc(f)}"` })
         : `<input data-a="${a}" data-f="" type="text" value="${esc(v)}" autocomplete="off">`;
       return `<label class="fl"><span>${label}</span>${input}<em></em></label>`;
@@ -295,8 +310,15 @@ export class SheetView extends Component {
       const em = inp.closest('label').querySelector('em'), a = inp.dataset.a, iv = inVal(inp);
       if (isDate(inp)) { em.textContent = iv === null ? 'Data non valida (gg/mm/aaaa)' : ''; return; }
       const v = this.#parseIn(iv, false);
+      if (inp.dataset.money) {
+        const cur = overlay.querySelector(`[data-cur="${a}"]`).value;
+        if (cur !== 'EUR' && typeof v === 'number') { const e = convert(v, cur, 'EUR', bk.rates, bk.st.wealth.ov); em.textContent = e == null ? 'Cambio non disponibile: controlla la connessione' : `≈ ${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(e)} (i totali sono in euro)`; } else em.textContent = '';
+        return;
+      }
       if (typeof v === 'string' && v[0] === '=') { try { em.textContent = '= ' + bk.preview(i, a, v); } catch { em.textContent = 'Formula non valida'; } } else em.textContent = '';
     };
+    overlay.querySelectorAll('[data-cur]').forEach(sel => sel.addEventListener('change', () => preview(overlay.querySelector(`[data-a="${sel.dataset.cur}"]`))));
+    if (overlay.querySelector('[data-cur]')) bk.loadRates().then(() => inputs.forEach(preview));
     inputs.forEach(inp => { preview(inp); inp.addEventListener('input', () => preview(inp)); inp.addEventListener('change', () => preview(inp)); });
     overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     overlay.querySelector('[data-act="cancel"]').onclick = close;
@@ -310,12 +332,21 @@ export class SheetView extends Component {
       });
       this.#done(close);
     });
-    overlay.querySelector('[data-act="save"]').onclick = () => {
-      const changes = [];
+    overlay.querySelector('[data-act="save"]').onclick = async () => {
+      const changes = [], curs = {};
+      if ([...inputs].some(x => x.dataset.money && overlay.querySelector(`[data-cur="${x.dataset.a}"]`).value !== 'EUR')) await bk.loadRates();
       for (const inp of inputs) {
         const iv = inVal(inp);
         if (isDate(inp) && iv === null) { inp.classList.add('invalid'); inp.closest('label').querySelector('em').textContent = 'Data non valida (gg/mm/aaaa)'; return; }
-        const a = inp.dataset.a, v = this.#parseIn(iv, isDate(inp)), old = s.cells[a];
+        const a = inp.dataset.a; let v = this.#parseIn(iv, isDate(inp)); const old = s.cells[a];
+        if (inp.dataset.money) {
+          const cur = overlay.querySelector(`[data-cur="${a}"]`).value;
+          if (cur !== 'EUR' && typeof v === 'number') {
+            const e = convert(v, cur, 'EUR', bk.rates, bk.st.wealth.ov);
+            if (e == null) { inp.closest('label').querySelector('em').textContent = 'Cambio non disponibile ora: scegli Euro o riprova'; return; }
+            curs[a] = { cur, amt: v, eur: Math.round(e * 100) / 100 }; v = curs[a].eur;
+          } else curs[a] = null;
+        }
         if ((v === null && old == null) || v === old) continue;
         if (typeof v === 'string' && v[0] === '=') { try { bk.check(v); } catch { inp.closest('label').querySelector('em').textContent = 'Formula non valida'; return; } }
         changes.push([a, v, inp.dataset.f]);
@@ -324,6 +355,7 @@ export class SheetView extends Component {
         const isDef = ([a, v]) => { const d = add.x.defaults?.[a.replace(/\d+/, '')]; return d === '@today' ? v === todaySerial() : d != null && v === d; };
         if (changes.every(isDef)) { close(); return; }
       }
+      for (const a in curs) { if (curs[a]) bk.st.cur[i + '!' + a] = curs[a]; else delete bk.st.cur[i + '!' + a]; }
       changes.forEach(([a, v, f]) => { bk.put(i, a, v); if (f && v !== null && !s.fmt[a]) bk.setFmt(i, a, f); });
       if (add) for (const c of add.cols) {              // riga nuova: le formule di calcolo (totali ecc.) arrivano da sole
         if (s.cells[c + add.r] != null) continue;

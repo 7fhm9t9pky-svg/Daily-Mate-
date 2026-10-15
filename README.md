@@ -209,3 +209,6 @@ Il quadretto **⚙ Configurazione** raccoglie i dati che non cambiano mai, scrit
 - **Configurazione → Lavori e paghe**: ogni lavoro ha una o più paghe con nome (es. "Paga Swievo", "Paga Swievo 10%", "Paga cantiere"), con una "di solito". Si creano, modificano ed eliminano da lì; eliminando una paga le giornate già inserite mantengono l'importo calcolato.
 - **Ore lavoro**: per ogni giornata si sceglie una delle paghe del lavoro oppure "Scrivo io".
 - **Patrimonio**: ogni banca può avere più conti, ognuno con la sua valuta (euro, dollari, cripto…). Il totale si vede nella valuta preferita (euro o dollari, ecc.).
+
+- **Valuta nelle caselle**: ogni casella importo (es. Entrate BPM) ha un menu per scegliere la valuta; il valore viene convertito in euro per i totali e riaprendo la casella ritrovi l'importo originale.
+- **Nuovi modelli di pagina**: Viaggi, Regali e feste, Salute, Figli, Sport e hobby, Telefono e tecnologia, Spesa alimentare, Tasse e documenti.

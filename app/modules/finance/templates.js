@@ -263,6 +263,15 @@ export const TEMPLATES = [
       return s.result('Media', 'L1');
     }
   }
+  ,
+  expenses({ id: 'travel', icon: '✈️', title: 'Viaggi e vacanze', desc: 'Voli, alloggio, cibo, escursioni: quanto costa ogni viaggio, passo dopo passo.', noun: 'spesa di viaggio', reminder: 'Data di partenza', cats: ['Trasporti', 'Alloggio', 'Cibo', 'Escursioni', 'Souvenir', 'Altro'] }),
+  expenses({ id: 'gifts', icon: '🎁', title: 'Regali e feste', desc: 'Compleanni, Natale, matrimoni: tieni il conto dei regali e delle feste.', noun: 'spesa', reminder: 'Prossima ricorrenza', cats: ['Compleanni', 'Natale', 'Cerimonie', 'Feste', 'Altro'] }),
+  expenses({ id: 'health', icon: '🩺', title: 'Salute e farmacia', desc: 'Visite, farmaci, dentista, occhiali: tutte le spese per stare bene.', noun: 'spesa', reminder: 'Prossima visita', cats: ['Visite', 'Farmaci', 'Dentista', 'Occhiali e lenti', 'Analisi', 'Altro'] }),
+  expenses({ id: 'kids', icon: '🧒', title: 'Figli e scuola', desc: 'Scuola, libri, sport, babysitter: quanto costano i tuoi figli ogni mese.', noun: 'spesa', reminder: 'Prossima scadenza (retta, iscrizione…)', cats: ['Scuola e libri', 'Sport e attività', 'Abbigliamento', 'Babysitter', 'Salute', 'Altro'] }),
+  expenses({ id: 'hobby', icon: '🎨', title: 'Sport e hobby', desc: 'Palestra, attrezzatura, corsi, passioni: quanto investi nel tuo tempo libero.', noun: 'spesa', cats: ['Palestra e corsi', 'Attrezzatura', 'Eventi', 'Materiali', 'Altro'] }),
+  expenses({ id: 'tech', icon: '📱', title: 'Telefono, internet e tecnologia', desc: 'Offerte, dispositivi, riparazioni: i costi digitali sotto controllo.', noun: 'spesa', reminder: 'Prossimo rinnovo', cats: ['Telefono', 'Internet', 'Dispositivi', 'Riparazioni', 'Software e app', 'Altro'] }),
+  expenses({ id: 'groceries', icon: '🥦', title: 'Spesa alimentare', desc: 'Supermercato, mercato, ordini a domicilio: quanto spendi per mangiare.', noun: 'spesa', cats: ['Supermercato', 'Mercato', 'Ordini a domicilio', 'Ristoranti', 'Altro'] }),
+  expenses({ id: 'taxes', icon: '🏛️', title: 'Tasse e documenti', desc: 'Imposte, bolli, pratiche e commercialista: nulla più da dimenticare.', noun: 'spesa', reminder: 'Prossima scadenza fiscale', cats: ['Imposte', 'Bolli e marche', 'Commercialista', 'Pratiche', 'Altro'] })
 ];
 
 export const templateById = id => TEMPLATES.find(t => t.id === id);

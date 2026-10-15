@@ -75,7 +75,7 @@ export class FinanceModule extends Module {
   #flush() {
     const st = this._pending; if (!st) return;
     this._pending = null; clearTimeout(this._timer);
-    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg });
+    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg, cur: st.cur });
   }
 
   async getView(arg) {
