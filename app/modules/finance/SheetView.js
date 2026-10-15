@@ -238,6 +238,10 @@ export class SheetView extends Component {
   #isMoney(a) {
     const col = a.replace(/\d/g, ''), M = f => f === '0.00' || f === '#,##0.00';
     if (M(this.s.fmt[a])) return true;
+    if (this.i === 0 && !this.book.isCustom(0)) {            // scheda Patrimonio originale: "messi da parte", capitali nelle banche, crediti
+      const r = Number(a.replace(/\D/g, ''));
+      if (['A21', 'A26', 'B16', 'C16', 'D16'].includes(a) || (col === 'B' && r >= 31 && r <= 41)) return true;
+    }
     for (const k in this.s.fmt) if (k.replace(/\d/g, '') === col && M(this.s.fmt[k])) return true;
     return false;
   }
@@ -271,7 +275,7 @@ export class SheetView extends Component {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     const fields = flds.map(a => {
-      const raw = s.cells[a], f = s.fmt[a] || (raw == null && !add?.x.years ? this.#colFmt(a) : undefined), dm = isDateFmt(f) && !isFormula(raw);
+      const raw0 = s.cells[a], raw = /^=-?\d+(\.\d+)?$/.test(raw0 ?? '') ? Number(raw0.slice(1)) : raw0, f = s.fmt[a] || (raw == null && !add?.x.years ? this.#colFmt(a) : undefined), dm = isDateFmt(f) && !isFormula(raw);
       let v = raw == null ? '' : dm && typeof raw === 'number' ? serialToDate(raw).toISOString().slice(0, 10) : typeof raw === 'number' ? String(raw).replace('.', ',') : raw;
       const col = a.replace(/\d+/, '');
       if (raw == null && add) {                       // valori proposti per una voce nuova (oggi, "Da pagare"...)
