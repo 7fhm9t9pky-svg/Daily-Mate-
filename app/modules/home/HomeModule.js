@@ -48,7 +48,7 @@ class HomeView extends Component {
     const box = this.el.querySelector('#h-cal');
     const evs = cal ? await cal.eventsOn(todayIso()) : [];
     if (!evs.length) { box.innerHTML = '<div class="sub">Nessun evento oggi</div>'; return; }
-    box.innerHTML = evs.slice(0, 3).map(e => `<div class="bit"><span>${esc(e.title)}</span><em>ore ${e.start}</em></div>`).join('')
+    box.innerHTML = evs.slice(0, 3).map(e => `<div class="bit"><span>${esc(e.title)}</span><em>${e.allDay ? "tutto il giorno" : "ore " + e.start}</em></div>`).join('')
       + (evs.length > 3 ? `<div class="sub">+ altri ${evs.length - 3}</div>` : '')
       + (evs[0].notes ? `<div class="sub">${esc(evs[0].notes.slice(0, 60))}</div>` : '');
   }

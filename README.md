@@ -213,3 +213,7 @@ Il quadretto **⚙ Configurazione** raccoglie i dati che non cambiano mai, scrit
 - **Valuta nelle caselle**: ogni casella importo (es. Entrate BPM) ha un menu per scegliere la valuta; il valore viene convertito in euro per i totali e riaprendo la casella ritrovi l'importo originale.
 - **Nuovi modelli di pagina**: Viaggi, Regali e feste, Salute, Figli, Sport e hobby, Telefono e tecnologia, Spesa alimentare, Tasse e documenti.
 - Le caselle scritte in un'altra valuta mostrano l'importo originale (es. 100,00 USD); i totali restano in euro.
+
+## Calendario (Step 2)
+
+Viste **Giorno / Settimana / Mese**, eventi **ripetuti** (ogni giorno, lun–ven, settimana, 2 settimane, mese, anno, con data di fine facoltativa; si può eliminare un solo giorno di una serie), **categorie e colori**, eventi **tutto il giorno**, **promemoria** per ogni evento (all'ora, 10/30/60/120 minuti prima, il giorno prima, oppure come nelle Impostazioni). La logica delle ripetizioni è in `app/modules/calendar/recurrence.js`, usata anche dal server per le notifiche.

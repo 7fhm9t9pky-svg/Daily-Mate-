@@ -3,6 +3,7 @@ import path from 'path';
 import { db } from '../db.js';
 import { generateVapid, sendPush } from '../push/webpush.js';
 import { itemsFor } from '../groups/groupStore.js';
+import { occursOn } from '../../../app/modules/calendar/recurrence.js';
 
 const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 const VAPID_FILE = path.join(DATA_DIR, 'vapid.json');
@@ -84,12 +85,18 @@ export async function runReminders(now = new Date()) {
       }
     }
     if (prefs.events) {
-      const today = isoOf(now), nowMin = now.getHours() * 60 + now.getMinutes();
+      const nowMin = now.getHours() * 60 + now.getMinutes(), days = [0, 1, 2].map(k => { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k); return isoOf(d); });
       for (const e of [...(db.getValue(u.id, 'events') || []), ...itemsFor(u.id, 'events')]) {
-        if (!e || e.date !== today || !/^\d{1,2}:\d{2}$/.test(e.start || '')) continue;
-        const [h, m] = e.start.split(':').map(Number), diff = h * 60 + m - nowMin;
-        if (diff >= 0 && diff <= Number(prefs.eventMinutes || 30)) {
-          await once(`e|${e.id}|${e.date}|${e.start}`, { title: diff <= 1 ? 'Evento adesso' : `Evento tra ${diff} minuti`, body: `${e.start} · ${e.title || 'Evento'}`, page: 'calendar', from: 'calendario' });
+        if (!e || !e.date || e.remind === 'none') continue;
+        const allDay = !!e.allDay, st = allDay ? '08:00' : e.start;
+        if (!/^\d{1,2}:\d{2}$/.test(st || '')) continue;
+        const [h, m] = st.split(':').map(Number), win = e.remind === '' || e.remind == null ? Number(prefs.eventMinutes || 30) : Number(e.remind);
+        for (let k = 0; k < days.length; k++) {
+          if (!occursOn(e, days[k])) continue;
+          const diff = k * 1440 + h * 60 + m - nowMin;
+          if (diff < 0 || diff > win) continue;
+          const when = diff <= 1 ? 'adesso' : diff < 60 ? `tra ${diff} minuti` : diff < 1440 ? `tra ${Math.round(diff / 60)} ore` : 'domani';
+          await once(`e|${e.id}|${days[k]}|${st}`, { title: `Evento ${when}`, body: `${allDay ? 'Tutto il giorno' : st} · ${e.title || 'Evento'}`, page: 'calendar', from: 'calendario' });
         }
       }
     }
