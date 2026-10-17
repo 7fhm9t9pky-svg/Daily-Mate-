@@ -240,7 +240,7 @@ export class SheetView extends Component {
     if (M(this.s.fmt[a])) return true;
     if (this.i === 0 && !this.book.isCustom(0)) {            // scheda Patrimonio originale: "messi da parte", capitali nelle banche, crediti
       const r = Number(a.replace(/\D/g, ''));
-      if (['A21', 'A26', 'B16', 'C16', 'D16'].includes(a) || (col === 'B' && r >= 31 && r <= 41)) return true;
+      return ['A21', 'A26', 'B16', 'C16', 'D16'].includes(a) || (col === 'B' && r >= 31 && r <= 41);   // solo queste: la colonna A dei crediti contiene i nomi
     }
     for (const k in this.s.fmt) if (k.replace(/\d/g, '') === col && M(this.s.fmt[k])) return true;
     return false;
