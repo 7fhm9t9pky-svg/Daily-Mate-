@@ -83,7 +83,7 @@ export function forecast(book, now = new Date()) {
   if (owner) { credits = n(0, 'C31') || 0; liquid = (n(0, 'A6') || 0) - (n(0, 'B11') || 0) - (n(0, 'B26') || 0) - credits; }   // Totale originale meno investimenti e soldi ancora da incassare else { const T = book.wealthTotals('EUR'); liquid = T.liquid; credits = T.credits; }
   const W = workTotals(book.st.work);
   const incoming = [];
-  if (W.saldo > 0) incoming.push({ label: 'Da ricevere per il lavoro (arretrati + paga − acconti)', amount: W.saldo });
+  if (W.totale > 0) incoming.push({ label: 'Da ricevere per il lavoro (arretrati + paga − acconti)', amount: W.totale });
   else if (owner && book.legacyHours?.() && (n(0, 'B26') || 0) > 0) incoming.push({ label: 'Paga da ricevere', amount: n(0, 'B26') });
   if (credits > 0) incoming.push({ label: 'Crediti da riscuotere', amount: credits });
 

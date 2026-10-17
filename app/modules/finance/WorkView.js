@@ -29,7 +29,7 @@ export function workTotals(work) {
   const ore = jobs.reduce((s, x) => s + x.ore, 0), paga = jobs.reduce((s, x) => s + x.paga, 0);
   const acconti = work.adv.reduce((s, a) => s + num(a.amount), 0);
   const arretrati = (work.owed || []).reduce((s, a) => s + num(a.amount), 0);          // soldi dei mesi prima che ti devono ancora
-  return { jobs, ore, paga, acconti, arretrati, saldo: paga + arretrati - acconti };
+  return { jobs, ore, paga, acconti, arretrati, saldo: arretrati - acconti, totale: paga + arretrati - acconti };   // saldo = soldi dei mesi prima meno acconti; totale = con anche la paga di questo periodo
 }
 
 /**
@@ -63,8 +63,8 @@ export class WorkView extends Component {
       h += '<button class="xbtn" data-export="1">⇪ Esporta ore</button>';
       h += '<div class="tiles">' + tile('Ore totali', hrs(T.ore), true) + T.jobs.map(x => tile('Ore ' + x.job.name, hrs(x.ore))).join('')
         + T.jobs.map(x => tile('Paga ' + x.job.name, eur(x.paga))).join('')
-        + tile('Paga tot.', eur(T.paga)) + tile('Arretrati (mesi prima)', eur(T.arretrati)) + tile('Acconti', eur(T.acconti)) + tile('Saldo residuo', eur(T.saldo), true) + '</div>'
-        + '<p class="set-note">Saldo residuo = paga di questo periodo + arretrati dei mesi prima − acconti già ricevuti: è quello che ti devono ancora dare.</p>';
+        + tile('Paga tot.', eur(T.paga)) + tile('Arretrati (mesi prima)', eur(T.arretrati)) + tile('Acconti', eur(T.acconti)) + tile('Saldo residuo (mesi prima − acconti)', eur(T.saldo), true) + tile('Con anche la paga di questo periodo', eur(T.totale)) + '</div>'
+        + '<p class="set-note">Saldo residuo = arretrati dei mesi prima − acconti già ricevuti. Sotto trovi anche il totale se ci aggiungi la paga di questo periodo.</p>';
       for (const { job: j, ore } of T.jobs) {
         h += `<h2 class="s">${esc(j.name)}</h2><p class="set-note">${jobPays(j).length ? 'Paghe: ' + jobPays(j).map(p => `${esc(p.name)} ${eur(num(p.rate))}`).join(' · ') : 'Nessuna paga: creala in Configurazione'} · ${hrs(ore)} · <a href="#" data-editjob="${j.id}">modifica</a> · <a href="#/finance/config">paghe</a></p><div class="lst">`;
         for (const r of j.rows.slice().sort((x, y) => (y.d || '').localeCompare(x.d || ''))) {
