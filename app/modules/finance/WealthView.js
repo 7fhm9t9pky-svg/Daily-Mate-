@@ -39,10 +39,10 @@ export class WealthView extends Component {
       <div class="w-cur"><label>Mostra tutto in <select data-base>${FIAT_OPTS.map(o => `<option value="${o.value}"${o.value === base ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select></label></div>`;
     h += '<div class="tiles">' + tile('Patrimonio totale', money(T.total, base), true)
       + tile('Soldi disponibili', money(T.liquid, base)) + tile('Soldi da investire', money(T.invest, base))
-      + tile('Già investiti', money(T.invested, base)) + tile('Crediti da riscuotere', money(T.credits, base))
+      + tile('Già investiti', money(T.invested, base)) + tile('Crediti da riscuotere', money(T.credits, base)) + tile('Lavoro da ricevere', money(T.work, base))
       + tile('Contanti', money(T.cash, base)) + tile('Conti e carte', money(T.digital, base)) + tile('Cripto', money(T.crypto, base)) + '</div>';
     if (T.missing.length) h += `<p class="hint warn">⚠ Manca il cambio per: ${T.missing.map(esc).join(', ')}. Queste cifre non sono nel totale: tocca la valuta in “Cambi” e scrivi tu il valore.</p>`;
-    h += `<p class="set-note">Il patrimonio totale = soldi disponibili + soldi già investiti (dalla pagina Investimenti). I crediti non sono nel totale finché non li incassi.</p>`;
+    h += `<p class="set-note">Il patrimonio totale = soldi disponibili + soldi già investiti (dalla pagina Investimenti) + quello che devi ancora incassare (crediti e lavoro: arretrati + paga del periodo − acconti).</p>`;
 
     const rowHTML = (it, K) => {
       const conv = it.cur !== base ? convert(Number(it.amount) || 0, it.cur, base, rates, w.ov) : null;

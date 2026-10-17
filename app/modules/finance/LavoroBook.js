@@ -1,6 +1,7 @@
 import { makeEngine } from './engine.js';
 import { templateById } from './templates.js';
-import { wealthTotals, money } from './wealth.js';
+import { wealthTotals, money, convert } from './wealth.js';
+import { workTotals } from './worktotals.js';
 import { applyLabels } from './labels.js';
 import { migratePays } from './pays.js';
 
@@ -51,6 +52,7 @@ export class LavoroBook {
     this.D.sheets.forEach(s => { s.maxRow = Math.max(s.maxRow, 1000); });
     for (const c of this.D.charts) if (c.s === 4 && c.r1 === 3) c.r2 = 25;   // grafico annuale: anche gli anni aggiunti
     this.#engine();
+    this.syncWork();
   }
 
   #engine() {
@@ -108,7 +110,21 @@ export class LavoroBook {
   /** Capitale gia' investito (somma della colonna "Soldi investiti" nella scheda Investimenti). */
   investedEur() { let t = 0; for (let r = 2; r <= 1000; r++) { const v = this.num(2, 'C' + r); if (v != null) t += v; } return t; }
 
-  wealthTotals(base) { return wealthTotals(this.st.wealth, this.rates, base || this.st.wealth.base, this.investedEur()); }
+  /** Patrimonio: soldi + investimenti + quello che devi ancora incassare (crediti e lavoro: arretrati + paga del periodo − acconti). */
+  wealthTotals(base) {
+    base = base || this.st.wealth.base;
+    const T = wealthTotals(this.st.wealth, this.rates, base, this.investedEur());
+    const w = convert(workTotals(this.st.work).totale, 'EUR', base, this.rates, this.st.wealth.ov) ?? 0;
+    T.work = w; T.receivable = T.credits + w; T.total += T.receivable;
+    return T;
+  }
+
+  /** L'amministratore col nuovo sistema ore: "Paga da ricevere" del Patrimonio usa le ore nuove (non piu' la scheda originale). */
+  syncWork() {
+    if (!this.app?.isOwner?.() || this.st.work.mode !== 'new') return;
+    const t = workTotals(this.st.work).totale;
+    this.eng.set(this.D.sheets[0].name, 'B26', '=' + (Math.round(t * 100) / 100));
+  }
 
   /** L'amministratore tiene la scheda Ore lavoro originale; gli altri usano quella che si costruiscono da soli. */
   legacyHours() { return !!this.app?.isOwner?.() && this.st.work.mode !== 'new'; }
@@ -254,6 +270,6 @@ export class LavoroBook {
 
   put(i, a, v) { this.eng.set(this.D.sheets[i].name, a, v); this.st.ov[i + '|' + a] = v; }
   setFmt(i, a, f) { this.D.sheets[i].fmt[a] = f; this.st.fm[i + '|' + a] = f; }
-  commit() { this.onChange?.(this.st); }
+  commit() { this.syncWork(); this.onChange?.(this.st); }
   resetState() { this.st.ov = {}; this.st.fm = {}; this.st.cur = {}; this.onChange?.(this.st); }
 }

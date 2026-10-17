@@ -57,7 +57,7 @@ export class FinanceModule extends Module {
     const seed = await res.json();
     const saved = await this.app.storage.get(STATE_KEY);
     this._book = new LavoroBook(seed, saved, st => this.#save(st));
-    this._book.app = this.app;
+    this._book.app = this.app; this._book.syncWork();
     return this._book;
   }
 
