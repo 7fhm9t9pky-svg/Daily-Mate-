@@ -28,7 +28,8 @@ export function workTotals(work) {
   const jobs = work.jobs.map(j => ({ job: j, ore: j.rows.reduce((s, r) => s + dayHours(r), 0), paga: j.rows.reduce((s, r) => s + dayPay(j, r), 0) }));
   const ore = jobs.reduce((s, x) => s + x.ore, 0), paga = jobs.reduce((s, x) => s + x.paga, 0);
   const acconti = work.adv.reduce((s, a) => s + num(a.amount), 0);
-  return { jobs, ore, paga, acconti, saldo: paga - acconti };
+  const arretrati = (work.owed || []).reduce((s, a) => s + num(a.amount), 0);          // soldi dei mesi prima che ti devono ancora
+  return { jobs, ore, paga, acconti, arretrati, saldo: paga + arretrati - acconti };
 }
 
 /**
@@ -62,7 +63,8 @@ export class WorkView extends Component {
       h += '<button class="xbtn" data-export="1">⇪ Esporta ore</button>';
       h += '<div class="tiles">' + tile('Ore totali', hrs(T.ore), true) + T.jobs.map(x => tile('Ore ' + x.job.name, hrs(x.ore))).join('')
         + T.jobs.map(x => tile('Paga ' + x.job.name, eur(x.paga))).join('')
-        + tile('Paga tot.', eur(T.paga)) + tile('Acconti', eur(T.acconti)) + tile('Saldo residuo', eur(T.saldo)) + '</div>';
+        + tile('Paga tot.', eur(T.paga)) + tile('Arretrati (mesi prima)', eur(T.arretrati)) + tile('Acconti', eur(T.acconti)) + tile('Saldo residuo', eur(T.saldo), true) + '</div>'
+        + '<p class="set-note">Saldo residuo = paga di questo periodo + arretrati dei mesi prima − acconti già ricevuti: è quello che ti devono ancora dare.</p>';
       for (const { job: j, ore } of T.jobs) {
         h += `<h2 class="s">${esc(j.name)}</h2><p class="set-note">${jobPays(j).length ? 'Paghe: ' + jobPays(j).map(p => `${esc(p.name)} ${eur(num(p.rate))}`).join(' · ') : 'Nessuna paga: creala in Configurazione'} · ${hrs(ore)} · <a href="#" data-editjob="${j.id}">modifica</a> · <a href="#/finance/config">paghe</a></p><div class="lst">`;
         for (const r of j.rows.slice().sort((x, y) => (y.d || '').localeCompare(x.d || ''))) {
@@ -76,6 +78,11 @@ export class WorkView extends Component {
         }
         h += `</div><button class="add" data-newday="${j.id}">+ Nuovo giorno</button>`;
       }
+      const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+      const owed = (w.owed || []).slice().sort((x, y) => (y.year * 12 + y.month) - (x.year * 12 + x.month));
+      h += `<h2 class="s">Arretrati: soldi dei mesi prima che ti devono ancora</h2><div class="lst">${owed.map(o => `<div class="it ln" data-owed="${o.id}"><span>${esc(w.jobs.find(j => j.id === o.job)?.name || 'Azienda')} · ${MESI[o.month] || ''} ${o.year || ''}${o.note ? ' · ' + esc(o.note) : ''}</span><b>${eur(num(o.amount))}</b></div>`).join('') || '<p class="empty-s">Nessun arretrato. Se il tuo capo ti deve ancora dei soldi di mesi passati, aggiungili qui.</p>'}</div>
+        <button class="add" data-newowed="1">+ Aggiungi un arretrato (azienda, mese, importo)</button>`;
+      if (!owed.length && this.book.legacyOwedAmount?.() > 0) h += `<button class="add" data-importowed="1">⤓ Porta qui il saldo residuo della scheda originale (${eur(this.book.legacyOwedAmount())})</button>`;
       h += `<h2 class="s">Acconti</h2><div class="lst">${w.adv.slice().sort((x, y) => (y.d || '').localeCompare(x.d || '')).map(a => `<div class="it ln" data-adv="${a.id}"><span>${fmtShort(a.d) || '—'}${a.note ? ' · ' + esc(a.note) : ''}</span><b>${eur(num(a.amount))}</b></div>`).join('')}</div>
         <button class="add" data-newadv="1">+ Nuovo acconto</button>
         <button class="add" data-newjob="1">+ Crea un altro orario di lavoro</button>`;
@@ -97,6 +104,9 @@ export class WorkView extends Component {
     const ej = q('[data-editjob]'); if (ej) { e.preventDefault(); return this.jobForm(w.jobs.find(j => j.id === ej.dataset.editjob)); }
     const nd = q('[data-newday]'); if (nd) return this.dayForm(w.jobs.find(j => j.id === nd.dataset.newday), null);
     const row = q('[data-row]'); if (row) { const [jid, rid] = row.dataset.row.split('|'); const j = w.jobs.find(x => x.id === jid); return this.dayForm(j, j.rows.find(r => r.id === rid)); }
+    if (q('[data-newowed]')) return this.owedForm(null);
+    if (q('[data-importowed]')) { this.book.importLegacyOwed(); return this.save(); }
+    const od = q('[data-owed]'); if (od) return this.owedForm((w.owed || []).find(x => x.id === od.dataset.owed));
     if (q('[data-newadv]')) return this.advForm(null);
     const ad = q('[data-adv]'); if (ad) return this.advForm(w.adv.find(a => a.id === ad.dataset.adv));
   }
@@ -109,7 +119,7 @@ export class WorkView extends Component {
       values: job ? { name: job.name } : { name: '', rate: '' }, allowDelete: !!job
     });
     if (!r) return;
-    if (r.__delete) { if (!confirm(`Eliminare «${job.name}» con tutte le sue giornate?`)) return; this.w.jobs = this.w.jobs.filter(j => j !== job); delete this.book.st.exp.sel['w:' + job.id]; return this.save(); }
+    if (r.__delete) { if (!confirm(`Eliminare «${job.name}» con tutte le sue giornate?`)) return; this.w.jobs = this.w.jobs.filter(j => j !== job); this.w.owed = (this.w.owed || []).filter(o => o.job !== job.id); delete this.book.st.exp.sel['w:' + job.id]; return this.save(); }
     if (!r.name.trim()) { alert('Scrivi un nome'); return; }
     if (job) job.name = r.name.trim();
     else {
@@ -138,6 +148,33 @@ export class WorkView extends Component {
     if (r.__delete) { job.rows = job.rows.filter(x => x !== row); return this.save(); }
     const nr = { id: row?.id || uid(), d: r.d, a: r.a, b: r.b, c: r.c, e: r.e, rate: r.mode === 'own' && String(r.rate).trim() !== '' ? num(r.rate) : '', pay: r.mode === 'own' ? '' : r.mode, note: r.note.trim() };
     if (row) Object.assign(row, nr); else job.rows.push(nr);
+    this.save();
+  }
+
+  async owedForm(o) {
+    const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+    if (!this.w.jobs.length) { alert('Prima crea un lavoro (azienda) in Configurazione.'); return; }
+    const prev = new Date(); prev.setMonth(prev.getMonth() - 1);
+    const r = await FormModal.open({
+      title: o ? 'Arretrato' : 'Nuovo arretrato',
+      fields: [
+        { key: 'job', label: 'Quale azienda te li deve?', type: 'select', options: this.w.jobs.map(j => ({ value: j.id, label: j.name })) },
+        { key: 'month', label: 'Di quale mese?', type: 'select', options: MESI.map((m, i) => ({ value: String(i), label: m })) },
+        { key: 'year', label: 'Anno', type: 'text' },
+        { key: 'amount', label: 'Quanto ti devono ancora? (€)', type: 'text' },
+        { key: 'note', label: 'Note (facoltativo)', type: 'text' }
+      ],
+      values: o ? { job: o.job, month: String(o.month), year: String(o.year), amount: String(o.amount).replace('.', ','), note: o.note || '' } : { job: this.w.jobs[0].id, month: String(prev.getMonth()), year: String(prev.getFullYear()), amount: '', note: '' },
+      allowDelete: !!o
+    });
+    if (!r) return;
+    this.w.owed = this.w.owed || [];
+    if (r.__delete) { this.w.owed = this.w.owed.filter(x => x !== o); return this.save(); }
+    const amount = parseNum(r.amount), year = parseInt(r.year, 10);
+    if (amount === null || amount <= 0) { alert('Scrivi quanto ti devono come numero (es. 450)'); return; }
+    if (!(year > 2000 && year < 2100)) { alert('Scrivi l\'anno con 4 cifre (es. 2026)'); return; }
+    const data = { id: o?.id || uid(), job: r.job, month: Number(r.month), year, amount, note: r.note.trim() };
+    if (o) Object.assign(o, data); else this.w.owed.push(data);
     this.save();
   }
 

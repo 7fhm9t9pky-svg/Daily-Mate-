@@ -347,3 +347,6 @@ svg circle{fill:var(--acc)}
 .mo-c.out{opacity:.4}.mo-c.today b{background:var(--acc);color:var(--on-acc);border-radius:8px;padding:1px 0}.mo-c.sel{outline:2px solid var(--acc)}
 .mo-e{display:block;color:#fff;border-radius:4px;padding:1px 3px;font-size:9.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mo-c em{font-style:normal;font-size:10px;color:var(--mu);text-align:center}
+
+.tip{display:flex;gap:12px;align-items:flex-start;background:var(--pa);border-radius:16px;box-shadow:var(--sh);padding:12px 14px;margin-bottom:8px}.tip span{font-size:22px;line-height:1.2}.tip p{margin:0;font-size:14px;line-height:1.4}
+.tl.neg b{color:var(--neg)}

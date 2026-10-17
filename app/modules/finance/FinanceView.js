@@ -1,6 +1,7 @@
 import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
 import { workTotals } from './WorkView.js';
+import { forecast } from './forecast.js';
 import { TEMPLATES, TEMPLATE_GROUPS, templateById } from './templates.js';
 import { parseNum } from '../../core/format.js';
 import { money } from './wealth.js';
@@ -129,11 +130,15 @@ export class FinanceView extends Component {
     el.className = 'page';
     const bk = this.book;
     const ids = bk.sheets.map((_, i) => i).filter(i => bk.parentOf(i) === null && sheetVisible(bk, i));
+    let fv = '—', fk = 'Fine mese e mese dopo, con i consigli';
+    try { const F = forecast(bk); fv = F.usualDaily == null && !F.sure.length ? 'Registra qualche spesa' : new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(F.endMonth); fk = `Stima a fine ${F.month}`; } catch { /* dati incompleti */ }
+    const fcTile = `<button class="sheet-tile fc-tile" data-fc="1"><h3>📈 Prospettiva</h3><div class="v">${esc(fv)}</div><div class="k">${esc(fk)}</div></button>`;
     const cfgTile = `<button class="sheet-tile cfg-tile" data-cfg="1"><h3>⚙ Configurazione</h3><div class="v">${esc(bk.banks().slice(0, 2).join(' · ') || 'Banche, paga, valuta')}</div><div class="k">Scrivi una volta i tuoi dati fissi</div></button>`;
-    const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + cfgTile + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
+    const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + fcTile + cfgTile + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
     el.innerHTML = `<p class="fin-sub">Tocca un quadretto per aprirlo. Con <b>＋ Nuova pagina</b> trovi modelli pronti: risparmio, casa, animali, auto, prestiti, scadenze…</p><div class="sheet-grid">${tiles}</div>`;
     if (bk.useWealth()) bk.loadRates().then(() => { const t = el.querySelector('.sheet-tile[data-i="0"] .v'); if (t) t.textContent = money(bk.wealthTotals().total, bk.st.wealth.base); });
     el.querySelectorAll('.sheet-tile[data-i]').forEach(t => { t.onclick = () => this.onOpen(+t.dataset.i); });
+    el.querySelector('[data-fc]').onclick = () => this.onOpen('forecast');
     el.querySelector('[data-cfg]').onclick = () => this.onOpen('config');
     el.querySelector('[data-new]').onclick = async () => {
       const d = await askNewPage(null); if (!d) return;

@@ -6,6 +6,7 @@ import { SheetView } from './SheetView.js';
 import { WorkView, dayHours, dayPay } from './WorkView.js';
 import { ConfigView } from './ConfigView.js';
 import { WealthView } from './WealthView.js';
+import { ForecastView } from './ForecastView.js';
 
 import { parseNum } from '../../core/format.js';
 
@@ -84,6 +85,7 @@ export class FinanceModule extends Module {
       return { async mount(parent) { parent.innerHTML = `<p class="empty">${e.message}. Riprova tra poco.</p>`; }, destroy() {} };
     }
     if (arg === 'config') return new ConfigView({ book, onBack: () => this.app.router.goTo('finance') });
+    if (arg === 'forecast') return new ForecastView({ book, onBack: () => this.app.router.goTo('finance') });
     if (arg === 'wealth') return new WealthView({ book, title: 'Conti e valute', onBack: () => this.app.router.goTo('finance/0'), onOpen: n => this.app.router.goTo('finance/' + n) });
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
     if (i === 0 && book.useWealth() && sheetVisible(book, 0)) {

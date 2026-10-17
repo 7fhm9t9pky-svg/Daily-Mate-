@@ -217,3 +217,8 @@ Il quadretto **⚙ Configurazione** raccoglie i dati che non cambiano mai, scrit
 ## Calendario (Step 2)
 
 Viste **Giorno / Settimana / Mese**, eventi **ripetuti** (ogni giorno, lun–ven, settimana, 2 settimane, mese, anno, con data di fine facoltativa; si può eliminare un solo giorno di una serie), **categorie e colori**, eventi **tutto il giorno**, **promemoria** per ogni evento (all'ora, 10/30/60/120 minuti prima, il giorno prima, oppure come nelle Impostazioni). La logica delle ripetizioni è in `app/modules/calendar/recurrence.js`, usata anche dal server per le notifiche.
+
+## Arretrati e Prospettiva
+
+- **Ore lavoro → Arretrati**: soldi dei mesi prima che un'azienda ti deve ancora (azienda scelta dalla Configurazione, mese, anno, importo). Saldo residuo = paga + arretrati − acconti. Il "Saldo Residuo" della scheda originale viene portato qui in automatico (o con il pulsante "Porta qui il saldo residuo").
+- **Finanze → Prospettiva** (`finance/forecast`): stima dei soldi a fine mese e a fine mese prossimo = soldi disponibili − spese sicure (abbonamenti con prossimo rinnovo, scadenze non pagate) − spese abituali (media degli ultimi 60 giorni dalle pagine "spese"; per l'amministratore, in mancanza, la media di "Entrate e uscite"). Mostra anche i soldi che potrebbero arrivare e alcuni consigli. Logica in `forecast.js`.

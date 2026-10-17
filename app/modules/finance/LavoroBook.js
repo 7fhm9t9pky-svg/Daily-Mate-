@@ -32,7 +32,7 @@ export class LavoroBook {
       jobs: saved?.jobs || {},                                   // lavori aggiunti a mano per "Esporta ore"
       custom: saved?.custom || [],
       cur: saved?.cur || {},                                     // valuta scelta per le singole caselle importo: 'foglio!cella' -> {cur, amt, eur}
-      work: Object.assign({ jobs: [], adv: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
+      work: Object.assign({ jobs: [], adv: [], owed: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
       cfg: Object.assign({ banks: null, rate: '' }, saved?.cfg),                  // Configurazione: banche, paga standard
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
@@ -132,6 +132,16 @@ export class LavoroBook {
     }
     const acc = Number(String(s.cells.A22 ?? '').replace(/^=/, ''));
     if (acc > 0) this.st.work.adv.push({ id: U(), d: '', amount: acc, note: 'Acconti già versati' });
+    this.importLegacyOwed();
+  }
+
+  /** "Saldo Residuo" della scheda originale (soldi dei mesi prima che il capo ti deve ancora) -> arretrato nel nuovo sistema. */
+  legacyOwedAmount() { const v = Number(String(this.D.sheets[1].cells.A19 ?? '').replace(/^=/, '')); return Number.isFinite(v) && v > 0 ? v : 0; }
+  importLegacyOwed() {
+    const v = this.legacyOwedAmount(), job = this.st.work.jobs[0]; if (!v || !job) return false;
+    const d = new Date(); d.setMonth(d.getMonth() - 1);
+    this.st.work.owed.push({ id: Math.random().toString(36).slice(2, 8), job: job.id, amount: v, month: d.getMonth(), year: d.getFullYear(), note: 'Saldo residuo della scheda originale' });
+    return true;
   }
 
   isCustom(i) { return i >= this.base; }

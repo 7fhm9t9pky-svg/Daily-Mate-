@@ -93,7 +93,7 @@ export class ConfigView extends Component {
     });
     if (!r) return;
     const w = this.book.st.work;
-    if (r.__delete) { if (!confirm(`Eliminare «${job.name}» con tutte le sue giornate?`)) return; w.jobs = w.jobs.filter(j => j !== job); delete this.book.st.exp.sel['w:' + job.id]; return this.save(); }
+    if (r.__delete) { if (!confirm(`Eliminare «${job.name}» con tutte le sue giornate?`)) return; w.jobs = w.jobs.filter(j => j !== job); w.owed = (w.owed || []).filter(o => o.job !== job.id); delete this.book.st.exp.sel['w:' + job.id]; return this.save(); }
     const name = r.name.trim(); if (!name) { alert('Scrivi un nome'); return; }
     if (job) job.name = name;
     else {
