@@ -21,16 +21,19 @@ class HomeView extends Component {
     const show = id => !app.isHidden(id), nm = (id, d) => app.ui?.labels?.[id] || d;
     el.innerHTML = `
       <div class="hero"><h1>Ciao${name ? ' ' + esc(name) : ''}</h1>${welcome ? `<p>${esc(welcome)}</p>` : ''}</div>
+      <div class="quick">${[['calendar', 'calendar', 'Evento', '📅'], ['alerts', 'alerts', 'Scadenza', '⏰'], ['notes', 'alerts/notes', 'Nota', '📝'], ['documents', 'documents', 'Documento', '📄'], ['contacts', 'contacts', 'Contatto', '👤']].filter(([, path]) => show(path.split('/')[0])).map(([k, path, l, ic]) => `<button data-q="${k}" data-path="${path}"><i>${ic}</i><span>${l}</span></button>`).join('')}</div>
       <div class="home-grid">
         ${show('calendar') ? `<button class="big-tile" data-go="calendar"><h3>${esc(nm('calendar', 'Calendario'))}</h3><div class="bits" id="h-cal"></div></button>` : ''}
         ${show('alerts') ? `<button class="big-tile" data-go="alerts"><h3>${esc(nm('alerts', 'Avvisi'))}</h3><div class="bits" id="h-alerts"></div></button>` : ''}
         ${show('finance') ? `<button class="big-tile accent" data-go="finance"><h3>${esc(nm('finance', 'Finanze'))}</h3><div id="h-fin"></div></button>` : ''}
       </div>
+      ${show('finance') ? `<button class="big-tile fc-home" data-go="finance/forecast" hidden><h3>Prospettiva di fine mese</h3><div id="h-fc"></div></button>` : ''}
       ${show('activity') ? `<div class="sec-head"><h2 class="s">${esc(nm('activity', 'Attività'))}</h2><button class="link" data-go="activity">Vedi tutto ›</button></div>
       <div class="mini-grid" id="h-mini"></div>` : ''}
       ${show('finance') ? `<h2 class="s">Come va questo mese</h2>
       <div class="score" id="h-score"></div>` : ''}`;
     el.querySelectorAll('[data-go]').forEach(b => { b.onclick = () => this.m.app.router.goTo(b.dataset.go); });
+    el.querySelectorAll('[data-q]').forEach(b => { b.onclick = () => this.m.app.quickAdd(b.dataset.q, b.dataset.path); });
     el.querySelector('#h-score')?.addEventListener('click', e => {
       const d = e.target.closest('[data-m]')?.dataset.m;
       if (d) { this.month = (this.month + Number(d) + 12) % 12; this.#drawMonth(); }
@@ -39,7 +42,7 @@ class HomeView extends Component {
   }
 
   async afterMount() {
-    this.#drawCalendar(); this.#drawAlerts();
+    this.#drawCalendar(); this.#drawAlerts(); this.#drawForecast();
     await this.#drawMonth();
   }
 
@@ -51,6 +54,13 @@ class HomeView extends Component {
     box.innerHTML = evs.slice(0, 3).map(e => `<div class="bit"><span>${esc(e.title)}</span><em>${e.allDay ? "tutto il giorno" : "ore " + e.start}</em></div>`).join('')
       + (evs.length > 3 ? `<div class="sub">+ altri ${evs.length - 3}</div>` : '')
       + (evs[0].notes ? `<div class="sub">${esc(evs[0].notes.slice(0, 60))}</div>` : '');
+  }
+
+  async #drawForecast() {
+    const box = this.el.querySelector('#h-fc'), fin = this.m.app.registry.get('finance'); if (!box || !fin) return;
+    const F = await fin.getForecast(); if (!F || (F.usualDaily == null && !F.sure?.length)) return;
+    box.innerHTML = `<div class="sub">Stima a fine ${esc(F.month)}</div><div class="v">${eur(F.endMonth)}</div>`;
+    box.closest('.fc-home').hidden = false;
   }
 
   async #drawAlerts() {

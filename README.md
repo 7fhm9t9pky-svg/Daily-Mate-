@@ -231,3 +231,6 @@ La pagina **Avvisi** ha due schede. **Avvisi**: scadenze con data, che si posson
 ## Ibrido: nuova struttura (fase 1)
 Barra in basso con 4 schede (Home, Agenda, Archivio, Finanze); l'ingranaggio in alto apre il menu con tutte le pagine (Gruppi, Attività, Impostazioni, Amministrazione…).
 Agenda = Calendario | Scadenze (Avvisi). Archivio = Documenti | Note | Contatti (nuova rubrica). Colori più morbidi (verde salvia).
+
+## Ibrido fase 2
+Documenti: testo scritto nell'app (scaricabile in .txt), foto (ridotte) e PDF allegati, etichette di scadenza e filtri. Home: riga di aggiunta veloce (Evento, Scadenza, Nota, Documento, Contatto) e riquadro Prospettiva. Finanze: Panoramica | Movimenti | Conti e card del mese. Titoli grandi con riga grigia.

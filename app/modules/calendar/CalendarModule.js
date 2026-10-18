@@ -41,7 +41,7 @@ class CalendarView extends Component {
     return el;
   }
 
-  async afterMount() { await this.draw(true); }
+  async afterMount() { await this.draw(true); if (this.m.app?.consumeQuick?.('calendar')) this.openForm(null, Math.min(new Date().getHours() + 1, 23), this.date); }
   destroy() { this.el?.querySelector('.fab')?.remove(); super.destroy(); }
 
   #step(dir) {

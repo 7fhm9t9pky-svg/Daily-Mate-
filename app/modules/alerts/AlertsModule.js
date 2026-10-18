@@ -29,7 +29,7 @@ class AlertsView extends Component {
     return el;
   }
 
-  async afterMount() { await this.draw(); }
+  async afterMount() { await this.draw(); const q = this.m.app?.quick; if (q === 'alerts' || q === 'notes') { this.m.app.quick = null; q === 'alerts' ? this.alertForm(null) : this.noteForm(null); } }
 
   async #click(e) {
     const t = e.target;

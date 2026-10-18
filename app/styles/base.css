@@ -99,7 +99,8 @@ svg circle{fill:var(--acc)}
 .score{background:var(--pa);border-radius:22px;padding:14px 18px;box-shadow:var(--sh)}
 .score-head{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px}
 .score-head button{background:var(--soft);border:0;width:34px;height:34px;border-radius:12px;color:var(--acc);font-size:16px}
-.score-head b{min-width:120px;text-align:center;font-size:17px;text-transform:capitalize}
+.score-head b{min-width:120px;text-align:center;font-size:17px}
+.topbar .ttl small::first-letter{text-transform:uppercase}
 .score-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid var(--ln)}
 .score-row:first-of-type{border-top:0}
 .score-row .arrow{width:26px;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--soft);color:var(--mu)}
@@ -259,7 +260,8 @@ svg circle{fill:var(--acc)}
 /* chat di gruppo */
 .gd-tabs{margin-bottom:12px}
 .chat{display:flex;flex-direction:column;gap:6px;padding-bottom:84px;min-height:50vh}
-.chat-day{align-self:center;font-size:11px;color:var(--mu);margin:8px 0 2px;text-transform:capitalize}
+.chat-day{align-self:center;font-size:11px;color:var(--mu);margin:8px 0 2px}
+.topbar .ttl small::first-letter{text-transform:uppercase}
 .msg{max-width:82%;padding:8px 11px;border-radius:16px;background:var(--pa);box-shadow:var(--sh);word-break:break-word}
 .msg.me{align-self:flex-end;background:var(--soft);border-bottom-right-radius:5px}
 .msg.ot{align-self:flex-start;border-bottom-left-radius:5px}
@@ -386,3 +388,28 @@ body.no-tabs .tabbar{display:none}
   .app-main{padding-bottom:60px}
   .seg{margin:2px 28px 8px}
 }
+
+/* ---------- Ibrido fase 2 ---------- */
+.topbar .ttl{display:flex;flex-direction:column;min-width:0}
+.topbar .ttl small{font-size:12.5px;color:var(--mu);font-weight:400}
+.topbar .ttl small::first-letter{text-transform:uppercase}
+.topbar .ttl small:empty{display:none}
+.quick{display:flex;gap:8px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px}
+.quick button{flex:1 0 auto;min-width:72px;background:var(--pa);border:0;border-radius:18px;box-shadow:var(--sh);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:500}
+.quick button i{font-style:normal;font-size:20px}
+.chip.soon{background:var(--y);color:var(--ink)}
+.doc-files{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.doc-f{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:12px;padding:6px 8px}
+.doc-f img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+.doc-f .pdf{width:44px;height:44px;border-radius:8px;background:var(--r);display:grid;place-items:center;font-weight:700;font-size:12px}
+.doc-f a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--acc);font-size:13px}
+.doc-f button{border:0;background:none;font-size:16px;color:var(--mu)}
+.doc-add{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.doc-add .btn{font-size:13px;padding:8px 10px}
+.fin-seg{margin:2px 0 10px}
+.fin-month{background:var(--pa);border-radius:22px;box-shadow:var(--sh);padding:14px 16px;margin-bottom:12px}
+.fin-month h4{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mu);margin-bottom:8px}
+.fm-row{display:flex;justify-content:space-between;gap:8px}
+.fm-row small{display:block;color:var(--mu);font-size:12px}
+.fm-row b{font-size:19px}.fm-row b.pos{color:var(--pos)}.fm-row b.neg{color:var(--neg)}
+.fc-home{margin-top:12px;width:100%}

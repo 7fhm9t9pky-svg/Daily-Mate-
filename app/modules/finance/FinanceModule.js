@@ -1,3 +1,4 @@
+import { forecast } from './forecast.js';
 import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { Module } from '../Module.js';
 import { LavoroBook, MES } from './LavoroBook.js';
@@ -101,7 +102,7 @@ export class FinanceModule extends Module {
         onSaved: () => {}
       });
     }
-    return new FinanceView({ book, onOpen: n => this.app.router.goTo('finance/' + n) });
+    return new FinanceView({ book, onOpen: n => this.app.router.goTo('finance/' + n), monthData: m => this.getHomeData(m) });
   }
 
   /**
@@ -184,6 +185,11 @@ export class FinanceModule extends Module {
   }
 
   /** Numeri e serie per la Home (patrimonio, investimenti, entrate/uscite, punteggi del mese). */
+  /** Stima di fine mese per la Home (null se mancano dati). */
+  async getForecast() {
+    try { const b = await this.book(); await b.loadRates?.(); return forecast(b); } catch { return null; }
+  }
+
   async getHomeData(m) {
     let b;
     try { b = await this.book(); } catch { return null; }

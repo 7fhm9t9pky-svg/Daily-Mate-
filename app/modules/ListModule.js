@@ -20,7 +20,7 @@ class ListModuleView extends Component {
     return el;
   }
 
-  async afterMount() { await this.refresh(); }
+  async afterMount() { await this.refresh(); if (this.module.app?.consumeQuick?.(this.module.id)) this.openForm(); }
 
   async refresh() {
     this.items = this.module.sort(await this.module.repo.getAll());

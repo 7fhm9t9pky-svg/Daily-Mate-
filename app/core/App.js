@@ -79,6 +79,10 @@ export class App {
     document.getElementById('drawer-bk').onclick = () => this.toggleDrawer(false);
   }
 
+  /** Aggiunta veloce dalla Home: la pagina aperta controlla se deve subito mostrare il modulo "nuovo". */
+  quickAdd(page, path) { this.quick = page; this.router.goTo(path || page); }
+  consumeQuick(page) { if (this.quick === page) { this.quick = null; return true; } return false; }
+
   toggleDrawer(open) { this.drawerEl.classList.toggle('open', open); }
 
   /** Pagine mostrate a questo utente (alcune possono essere nascoste dall'amministratore). */
@@ -150,6 +154,9 @@ export class App {
     this.renderNav();
     this.titleEl.textContent = this.moduleName(module);
     this.#renderTabs(module.id, arg);
+    { const tab = this.#tabOf(module.id, arg), T = { agenda: ['Agenda', 'Eventi e scadenze'], archivio: ['Archivio', 'Documenti, note e contatti'], finance: [this.moduleName(module), 'Soldi, conti e investimenti'], home: [this.moduleName(module), new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })] }[tab];
+      if (T) this.titleEl.textContent = T[0];
+      const sub = document.getElementById('page-sub'); if (sub) sub.textContent = T ? T[1] : ''; }
     document.title = `${this.moduleName(module)} · Daily Mate`;
     this.activeView?.destroy?.();
     const view = await module.getView(arg);

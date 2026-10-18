@@ -123,7 +123,7 @@ export function tileHTML(book, i, first = false) {
 
 /** Pagina Finanze: un quadretto per ogni scheda del foglio Lavoro. */
 export class FinanceView extends Component {
-  constructor({ book, onOpen }) { super(); this.book = book; this.onOpen = onOpen; }
+  constructor({ book, onOpen, monthData }) { super(); this.book = book; this.onOpen = onOpen; this.monthData = monthData; }
 
   render() {
     const el = document.createElement('section');
@@ -135,9 +135,20 @@ export class FinanceView extends Component {
     const fcTile = `<button class="sheet-tile fc-tile" data-fc="1"><h3>📈 Prospettiva</h3><div class="v">${esc(fv)}</div><div class="k">${esc(fk)}</div></button>`;
     const cfgTile = `<button class="sheet-tile cfg-tile" data-cfg="1"><h3>⚙ Configurazione</h3><div class="v">${esc(bk.banks().slice(0, 2).join(' · ') || 'Banche, paga, valuta')}</div><div class="k">Scrivi una volta i tuoi dati fissi</div></button>`;
     const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + fcTile + cfgTile + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
-    el.innerHTML = `<p class="fin-sub">Tocca un quadretto per aprirlo. Con <b>＋ Nuova pagina</b> trovi modelli pronti: risparmio, casa, animali, auto, prestiti, scadenze…</p><div class="sheet-grid">${tiles}</div>`;
+    const MES = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'], mi = new Date().getMonth();
+    const pills = [bk.sheets[5] && sheetVisible(bk, 5) ? ['Movimenti', 5] : null, bk.sheets[0] && sheetVisible(bk, 0) ? ['Conti', 0] : null].filter(Boolean);
+    el.innerHTML = `<div class="seg fin-seg"><button class="on">Panoramica</button>${pills.map(([l, i]) => `<button data-open="${i}">${l}</button>`).join('')}</div>
+      <div class="fin-month" hidden></div>
+      <p class="fin-sub">Tocca un quadretto per aprirlo. Con <b>＋ Nuova pagina</b> trovi modelli pronti: risparmio, casa, animali, auto, prestiti, scadenze…</p><div class="sheet-grid">${tiles}</div>`;
     if (bk.useWealth()) bk.loadRates().then(() => { const t = el.querySelector('.sheet-tile[data-i="0"] .v'); if (t) t.textContent = money(bk.wealthTotals().total, bk.st.wealth.base); });
     el.querySelectorAll('.sheet-tile[data-i]').forEach(t => { t.onclick = () => this.onOpen(+t.dataset.i); });
+    el.querySelectorAll('[data-open]').forEach(b => { b.onclick = () => this.onOpen(+b.dataset.open); });
+    this.monthData?.(mi).then(d => {
+      const m = d?.month, box = el.querySelector('.fin-month'); if (!m || m.entrate == null && m.uscite == null) return;
+      const f = n => n == null ? '—' : new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n), sal = (m.entrate || 0) - (m.uscite || 0);
+      box.innerHTML = `<h4>${MES[mi][0].toUpperCase() + MES[mi].slice(1)}</h4><div class="fm-row"><div><small>Entrate</small><b class="pos">${f(m.entrate)}</b></div><div><small>Uscite</small><b class="neg">${f(m.uscite)}</b></div><div><small>Saldo</small><b class="${sal < 0 ? 'neg' : 'pos'}">${f(sal)}</b></div></div>`;
+      box.hidden = false;
+    }).catch(() => {});
     el.querySelector('[data-fc]').onclick = () => this.onOpen('forecast');
     el.querySelector('[data-cfg]').onclick = () => this.onOpen('config');
     el.querySelector('[data-new]').onclick = async () => {
