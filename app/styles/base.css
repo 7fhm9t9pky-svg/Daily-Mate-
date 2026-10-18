@@ -350,3 +350,18 @@ svg circle{fill:var(--acc)}
 
 .tip{display:flex;gap:12px;align-items:flex-start;background:var(--pa);border-radius:16px;box-shadow:var(--sh);padding:12px 14px;margin-bottom:8px}.tip span{font-size:22px;line-height:1.2}.tip p{margin:0;font-size:14px;line-height:1.4}
 .tl.neg b{color:var(--neg)}
+
+/* ---- Avvisi e Note ---- */
+.an-bar{display:flex;gap:8px;margin:0 0 8px}.an-search{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);color:var(--ink);font:inherit;font-size:15px}
+.an-chips{display:flex;gap:6px;margin-bottom:10px}.an-chips:empty{display:none}
+.an-chips button{border:0;background:var(--pa);box-shadow:var(--sh);padding:7px 14px;border-radius:999px;font:inherit;font-size:13px;font-weight:600;color:var(--mu)}.an-chips button.on{background:var(--acc);color:var(--on-acc)}
+.row.ar{cursor:pointer}
+.nt-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.nt{background:color-mix(in srgb,var(--nc,transparent) 16%,var(--pa));border-top:5px solid var(--nc,transparent);border-radius:16px;box-shadow:var(--sh);padding:11px 12px;cursor:pointer;overflow:hidden;min-width:0}
+.nt h4{font-size:15px;margin:0 0 6px;overflow-wrap:anywhere}
+.nt-t{margin:0;font-size:13px;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;opacity:.85}
+.nt-i{display:flex;gap:7px;align-items:flex-start;font-size:13px;margin-bottom:4px}.nt-i .box{width:18px;height:18px;border-radius:6px;font-size:12px}.nt-i.d span:last-child{opacity:.5;text-decoration:line-through}
+.nt-p,.nt small{display:block;color:var(--mu);font-size:11px;margin-top:4px}
+.note-modal .nm-mode{margin:4px 0 10px}
+.nm-r{display:flex;align-items:center;gap:8px;margin-bottom:6px}.nm-r input{flex:1;min-width:0}.nm-r button{border:0;background:none;color:var(--mu);font-size:16px;padding:6px}
+.sws{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}.sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;background:var(--pa);box-shadow:inset 0 0 0 1px var(--ln);color:var(--mu);font-size:13px}.sw.on{border-color:var(--ink)}
