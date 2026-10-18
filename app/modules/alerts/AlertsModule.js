@@ -19,7 +19,7 @@ class AlertsView extends Component {
     const el = document.createElement('section');
     el.className = 'page';
     el.innerHTML = `
-      <div class="cal-tabs"><button data-tab="alerts">Avvisi</button><button data-tab="notes">Note</button></div>
+      <div class="cal-tabs al-tabs"><button data-tab="alerts">Avvisi</button><button data-tab="notes">Note</button></div>
       <div class="an-bar"><input type="search" class="an-search" placeholder="Cerca…" aria-label="Cerca"><button class="btn primary" data-act="add">+ Nuovo</button></div>
       <div class="an-chips"></div>
       <div class="an-body"></div>`;
@@ -172,7 +172,7 @@ export class AlertsModule extends Module {
     this.notes = new SharedRepository(storage, 'notes', NoteItem, groups);
   }
 
-  async getView() { this.repo.invalidate?.(); this.notes.invalidate?.(); return new AlertsView(this); }
+  async getView(arg) { this.repo.invalidate?.(); this.notes.invalidate?.(); const v = new AlertsView(this); if (arg === 'notes') v.tab = 'notes'; return v; }
 
   /** Segna fatto un avviso; se si ripete passa alla data successiva (e non resta mai "fatto"). */
   async toggle(a) {

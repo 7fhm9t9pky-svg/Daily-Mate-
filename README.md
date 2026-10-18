@@ -227,3 +227,7 @@ Viste **Giorno / Settimana / Mese**, eventi **ripetuti** (ogni giorno, lun–ven
 ## Avvisi e Note (Step 3)
 
 La pagina **Avvisi** ha due schede. **Avvisi**: scadenze con data, che si possono ripetere (giorno, settimana, mese, anno: quando li spunti passano alla data dopo), colorare e fissare in alto; filtri Da fare / Fatti / Tutti e ricerca. **Note**: appunti di testo oppure elenchi con spunte (si spunta direttamente dalla scheda), con colori, fissate in alto e ricerca. Le note sono personali.
+
+## Ibrido: nuova struttura (fase 1)
+Barra in basso con 4 schede (Home, Agenda, Archivio, Finanze); l'ingranaggio in alto apre il menu con tutte le pagine (Gruppi, Attività, Impostazioni, Amministrazione…).
+Agenda = Calendario | Scadenze (Avvisi). Archivio = Documenti | Note | Contatti (nuova rubrica). Colori più morbidi (verde salvia).

@@ -3,12 +3,12 @@ import { Component } from '../../ui/Component.js';
 import { FormModal } from '../../ui/FormModal.js';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-const PAGES = [['calendar', 'Calendario'], ['documents', 'Documenti'], ['alerts', 'Avvisi'], ['finance', 'Finanze'], ['activity', 'Attività'], ['groups', 'Gruppi']];
+const PAGES = [['calendar', 'Calendario'], ['documents', 'Documenti'], ['contacts', 'Contatti'], ['alerts', 'Avvisi'], ['finance', 'Finanze'], ['activity', 'Attività'], ['groups', 'Gruppi']];
 const SHEETS = ['Patrimonio', 'Ore lavoro', 'Investimenti in corso', 'PIM azionario', 'Patrimonio nel tempo', 'Entrate e uscite', 'Trading 212', 'Conto KE', 'Risparmi'];
 const BASE_SHEETS = [0, 1, 2, 4, 5, 8];   // schede che un utente normale vede se l'amministratore non ha scelto altro
 const MODES = [['', 'Scelta dell\'utente'], ['auto', 'Automatico'], ['light', 'Chiaro'], ['dark', 'Scuro']];
 const ACCENTS = [['', 'Scelta dell\'utente'], ['verde', 'Verde'], ['blu', 'Blu'], ['viola', 'Viola'], ['rosso', 'Rosso'], ['grigio', 'Grigio']];
-const GO = [['', 'Nessuna (solo messaggio)'], ['home', 'Home'], ['calendar', 'Calendario'], ['documents', 'Documenti'], ['alerts', 'Avvisi'], ['finance', 'Finanze'], ['activity', 'Attività'], ['groups', 'Gruppi']];
+const GO = [['', 'Nessuna (solo messaggio)'], ['home', 'Home'], ['calendar', 'Calendario'], ['documents', 'Documenti'], ['contacts', 'Contatti'], ['alerts', 'Avvisi'], ['finance', 'Finanze'], ['activity', 'Attività'], ['groups', 'Gruppi']];
 
 /**
  * Amministrazione (solo per l'amministratore = primo account registrato):

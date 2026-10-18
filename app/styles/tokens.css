@@ -1,7 +1,7 @@
 /* Palette ripresa dal foglio "Lavoro": verdi su fondo chiaro, con tema scuro. */
 :root{
-  --bg:#eef1ec; --pa:#fff; --ink:#17231d; --mu:#6a766f; --ln:#e0e6df;
-  --acc:#0e5a47; --acc2:#1f8a6b; --soft:#e4f0ea; --on-acc:#fff;
+  --bg:#f4f6f1; --pa:#fff; --ink:#1b2620; --mu:#7a857e; --ln:#e5eae3;
+  --acc:#4f7a63; --acc2:#6f9a82; --soft:#e6efe8; --on-acc:#fff;
   --g:#c3ecd0; --r:#f8c4bd; --y:#f9eaa5;
   --pos:#1c7a55; --neg:#b4402f;
   --sh:0 1px 2px #0001,0 6px 18px #0e5a4712;

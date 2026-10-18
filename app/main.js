@@ -7,6 +7,7 @@ import { RemoteStorageAdapter } from './core/storage/RemoteStorageAdapter.js';
 import { HomeModule } from './modules/home/HomeModule.js';
 import { CalendarModule } from './modules/calendar/CalendarModule.js';
 import { DocumentsModule } from './modules/documents/DocumentsModule.js';
+import { ContactsModule } from './modules/contacts/ContactsModule.js';
 import { AlertsModule } from './modules/alerts/AlertsModule.js';
 import { FinanceModule } from './modules/finance/FinanceModule.js';
 import { ActivityModule } from './modules/activity/ActivityModule.js';
@@ -32,6 +33,7 @@ function boot() {
     .use(new CalendarModule({ storage, groups: groupSvc }))
     .use(new DocumentsModule({ storage, groups: groupSvc }))
     .use(new AlertsModule({ storage, groups: groupSvc }))
+    .use(new ContactsModule({ storage }))
     .use(new GroupsModule({ svc: groupSvc }))
     .use(new FinanceModule())
     .use(new ActivityModule())

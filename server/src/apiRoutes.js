@@ -11,7 +11,7 @@ import { getRates } from './rates/rates.js';
  */
 const bad = (error, status = 400) => ({ status, json: { error } });
 
-export const UI_PAGES = ['calendar', 'documents', 'alerts', 'finance', 'activity', 'groups'];   // pagine che l'admin puo' nascondere
+export const UI_PAGES = ['calendar', 'documents', 'contacts', 'alerts', 'finance', 'activity', 'groups'];   // pagine che l'admin puo' nascondere
 const MODES = ['', 'auto', 'light', 'dark'];
 const ACCENTS = ['', 'verde', 'blu', 'viola', 'rosso', 'grigio'];
 

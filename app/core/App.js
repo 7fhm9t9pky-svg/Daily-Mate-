@@ -5,6 +5,17 @@ import { ThemeManager } from './ThemeManager.js';
 import { ModuleRegistry } from './ModuleRegistry.js';
 import { Router } from './Router.js';
 
+/** Le 4 schede in basso e i selettori in alto (come nel modello): ogni scheda raggruppa pagine che gia' esistono. */
+const TABS = [
+  { id: 'home', label: 'Home', icon: '⌂', to: 'home', mods: ['home'] },
+  { id: 'agenda', label: 'Agenda', icon: '▦', to: 'calendar', mods: ['calendar', 'alerts'] },
+  { id: 'archivio', label: 'Archivio', icon: '▤', to: 'documents', mods: ['documents', 'alerts', 'contacts'] },
+  { id: 'finance', label: 'Finanze', icon: '€', to: 'finance', mods: ['finance'] }
+];
+const SEGS = {
+  agenda: [['calendar', 'Calendario', 'calendar'], ['alerts', 'Scadenze', 'alerts']],
+  archivio: [['documents', 'Documenti', 'documents'], ['notes', 'Note', 'alerts/notes'], ['contacts', 'Contatti', 'contacts']]
+};
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
 /**
@@ -93,6 +104,35 @@ export class App {
     }
   }
 
+  /** Scheda in basso a cui appartiene la pagina aperta. */
+  #tabOf(id, arg) {
+    if (id === 'alerts') return arg === 'notes' ? 'archivio' : 'agenda';
+    return TABS.find(t => t.mods.includes(id))?.id || '';
+  }
+
+  #renderTabs(id, arg) {
+    const bar = document.getElementById('tabbar'); if (!bar) return;
+    const cur = this.#tabOf(id, arg);
+    const vis = m => !this.isHidden(m) || m === 'home';
+    bar.innerHTML = TABS.filter(t => t.mods.some(vis)).map(t => {
+      const to = t.mods.includes(t.to) && vis(t.to) ? t.to : t.mods.find(vis);
+      return `<button data-to="${to}"${t.id === cur ? ' class="on"' : ''}><i>${t.icon}</i><span>${esc(t.label)}</span></button>`;
+    }).join('');
+    bar.querySelectorAll('[data-to]').forEach(b => { b.onclick = () => this.router.goTo(b.dataset.to); });
+    document.body.classList.toggle('no-tabs', !cur);   // pagine di servizio (Attivita', Gruppi, Impostazioni…): niente barra
+    // selettore in alto (Calendario | Scadenze, Documenti | Note | Contatti)
+    document.getElementById('seg-slot')?.remove();
+    const segs = (SEGS[cur] || []).filter(([, , path]) => vis(path.split('/')[0]));
+    if (segs.length > 1) {
+      const key = id === 'alerts' && arg === 'notes' ? 'notes' : id;
+      const div = document.createElement('div');
+      div.id = 'seg-slot'; div.className = 'seg';
+      div.innerHTML = segs.map(([k, label, path]) => `<button data-p="${path}"${k === key ? ' class="on"' : ''}>${esc(label)}</button>`).join('');
+      div.querySelectorAll('[data-p]').forEach(b => { b.onclick = () => this.router.goTo(b.dataset.p); });
+      this.mainEl.before(div);
+    }
+  }
+
   renderNav() {
     this.navEl.innerHTML = `<h2>Daily Mate</h2>` + this.visibleModules().map(m => `
       <button class="nav-item${m.id === this.activeModuleId ? ' is-active' : ''}" data-module="${m.id}">${esc(this.moduleName(m))}</button>`).join('')
@@ -109,6 +149,7 @@ export class App {
     this.activeModuleId = module.id;
     this.renderNav();
     this.titleEl.textContent = this.moduleName(module);
+    this.#renderTabs(module.id, arg);
     document.title = `${this.moduleName(module)} · Daily Mate`;
     this.activeView?.destroy?.();
     const view = await module.getView(arg);
