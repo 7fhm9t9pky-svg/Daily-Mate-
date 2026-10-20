@@ -413,3 +413,11 @@ body.no-tabs .tabbar{display:none}
 .fm-row small{display:block;color:var(--mu);font-size:12px}
 .fm-row b{font-size:19px}.fm-row b.pos{color:var(--pos)}.fm-row b.neg{color:var(--neg)}
 .fc-home{margin-top:12px;width:100%}
+
+/* ---------- Spese fisse ---------- */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px}
+.due{background:var(--bg);border-radius:16px;padding:10px 12px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px}
+.due-h{display:flex;justify-content:space-between;gap:8px}.due small{color:var(--mu)}
+.due select{padding:9px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);font:inherit}
+.due-b{display:flex;flex-wrap:wrap;gap:6px}.due-b .btn{font-size:13px;padding:8px 10px}
+.undo{border:0;background:none;font-size:18px;color:var(--mu);padding:0 6px}

@@ -1,0 +1,43 @@
+import { Component } from '../../ui/Component.js';
+import { state, upcoming, undo } from './fixed.js';
+import { MES } from './LavoroBook.js';
+
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const eur = n => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n || 0);
+const itd = iso => iso.slice(8) + '/' + iso.slice(5, 7);
+
+/** "Resoconto spese fisse": cosa e' stato pagato (e da quale banca) mese per mese, e cosa sta per scadere. */
+export class FixedView extends Component {
+  constructor({ book, onBack }) { super(); this.book = book; this.onBack = onBack; const n = new Date(); this.y = n.getFullYear(); this.m = n.getMonth(); }
+
+  render() {
+    const el = document.createElement('section');
+    el.className = 'page sheet-page';
+    el.innerHTML = '<div class="page-head"><button class="back" data-act="back">‹ Finanze</button><h1>Resoconto spese fisse</h1></div><div class="sheet-body"></div>';
+    el.querySelector('[data-act=back]').onclick = () => this.onBack();
+    el.addEventListener('click', e => {
+      const t = e.target;
+      if (t.closest('[data-step]')) { this.m += +t.closest('[data-step]').dataset.step; if (this.m < 0) { this.m = 11; this.y--; } if (this.m > 11) { this.m = 0; this.y++; } return this.refresh(); }
+      const u = t.closest('[data-undo]');
+      if (u && confirm('Annullo questo pagamento? I soldi tornano sul conto.')) { undo(this.book, u.dataset.undo); this.refresh(); }
+    });
+    this.body = el.querySelector('.sheet-body');
+    return el;
+  }
+
+  afterMount() { this.refresh(); }
+
+  refresh() {
+    const S = state(this.book), pre = this.y + '-' + String(this.m + 1).padStart(2, '0');
+    const log = S.log.filter(e => e.d.startsWith(pre)).sort((a, b) => b.d.localeCompare(a.d));
+    const tot = log.reduce((a, e) => a + e.amount, 0), by = {};
+    log.forEach(e => { const k = e.bank || 'Non scalato da nessun conto'; by[k] = (by[k] || 0) + e.amount; });
+    const up = upcoming(this.book, 30);
+    let h = `<p class="hint">💡 Quando arriva il giorno di un abbonamento, di una bolletta o di una spesa con la data nel futuro, l'app ti chiede con quale banca hai pagato e scala i soldi da sola. Qui trovi tutto.</p>
+      <div class="cal-nav"><button class="btn" data-step="-1">‹</button><b>${MES[this.m][0].toUpperCase() + MES[this.m].slice(1)} ${this.y}</b><button class="btn" data-step="1">›</button></div>
+      <div class="tiles"><div class="tl auto big"><small>Pagato nel mese</small><b>${eur(tot)}</b></div>${Object.entries(by).map(([k, v]) => `<div class="tl auto"><small>${esc(k)}</small><b>${eur(v)}</b></div>`).join('')}</div>
+      <h2 class="s">Pagamenti del mese</h2><div class="lst">${log.map(e => `<div class="it ln"><span>${itd(e.d)} · ${esc(e.name)}<small> ${esc(e.page || '')}${e.bank ? ' · ' + esc(e.bank) : ' · non scalato'}</small></span><b>${eur(e.amount)}</b><button class="undo" data-undo="${e.id}" aria-label="Annulla">↩</button></div>`).join('') || '<p class="empty-s">Ancora nessun pagamento registrato questo mese.</p>'}</div>
+      <h2 class="s">In scadenza nei prossimi 30 giorni</h2><div class="lst">${up.map(x => `<div class="it ln"><span>${itd(new Date(Date.UTC(1899, 11, 30) + x.due * 864e5).toISOString().slice(0, 10))} · ${esc(x.name)}<small> ${esc(x.page)}</small></span><b>${eur(x.amount)}</b></div>`).join('') || '<p class="empty-s">Niente in scadenza.</p>'}</div>`;
+    this.body.innerHTML = h;
+  }
+}

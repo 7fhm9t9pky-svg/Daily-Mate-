@@ -245,3 +245,6 @@ Storico settimanale investimenti: l'ultima riga segue l'Andamento % degli Invest
 Il grafico settimanale si chiama ora 'Andamento investimenti'; le settimane passate scritte a mano diventano lo storico.
 
 Prospettiva: aggiunta la stima del patrimonio totale (soldi dopo le spese + da incassare + investimenti proiettati con la tendenza settimanale).
+
+## Resoconto spese fisse
+Quando arriva la data di un abbonamento, di una bolletta o di una spesa segnata con data futura (Auto, Telefono…), l'app chiede con quale banca hai pagato, scala la cifra dal conto e la scrive nel nuovo "Resoconto spese fisse" (Finanze), mese per mese e per banca. Si può annullare un pagamento (i soldi tornano sul conto). Gli abbonamenti passano da soli al rinnovo successivo, le bollette diventano "Pagata".

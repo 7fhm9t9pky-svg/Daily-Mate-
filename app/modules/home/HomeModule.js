@@ -42,7 +42,7 @@ class HomeView extends Component {
   }
 
   async afterMount() {
-    this.#drawCalendar(); this.#drawAlerts(); this.#drawForecast();
+    this.#drawCalendar(); this.#drawAlerts(); this.#drawForecast(); this.m.app.registry.get('finance')?.askDue?.();
     await this.#drawMonth();
   }
 

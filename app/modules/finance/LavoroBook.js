@@ -36,6 +36,7 @@ export class LavoroBook {
       work: Object.assign({ jobs: [], adv: [], owed: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
       cfg: Object.assign({ banks: null, rate: '' }, saved?.cfg),                  // Configurazione: banche, paga standard
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
+      fixed: Object.assign({ done: {}, watch: {}, log: [] }, saved?.fixed || {}),     // spese fisse: scadenze gia' gestite e resoconto dei pagamenti
       snap: Object.assign({ m: {}, y: {}, last: null, inv: null }, saved?.snap || {}),       // patrimonio mese per mese / anno per anno (si ferma da solo quando il periodo finisce)
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };

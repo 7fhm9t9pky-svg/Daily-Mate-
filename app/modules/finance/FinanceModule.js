@@ -8,6 +8,8 @@ import { WorkView, dayHours, dayPay } from './WorkView.js';
 import { ConfigView } from './ConfigView.js';
 import { WealthView } from './WealthView.js';
 import { ForecastView } from './ForecastView.js';
+import { FixedView } from './FixedView.js';
+import { askDue } from './fixedAsk.js';
 
 import { parseNum } from '../../core/format.js';
 
@@ -77,7 +79,7 @@ export class FinanceModule extends Module {
   #flush() {
     const st = this._pending; if (!st) return;
     this._pending = null; clearTimeout(this._timer);
-    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg, cur: st.cur, snap: st.snap });
+    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg, cur: st.cur, snap: st.snap, fixed: st.fixed });
   }
 
   async getView(arg) {
@@ -85,7 +87,9 @@ export class FinanceModule extends Module {
     try { book = await this.book(); } catch (e) {
       return { async mount(parent) { parent.innerHTML = `<p class="empty">${e.message}. Riprova tra poco.</p>`; }, destroy() {} };
     }
+    if (arg === undefined || arg === '') this.askDue(true);
     if (arg === 'config') return new ConfigView({ book, onBack: () => this.app.router.goTo('finance') });
+    if (arg === 'fixed') return new FixedView({ book, onBack: () => this.app.router.goTo('finance') });
     if (arg === 'forecast') return new ForecastView({ book, onBack: () => this.app.router.goTo('finance') });
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
     if (i === 0 && book.useWealth() && sheetVisible(book, 0)) {
@@ -185,6 +189,14 @@ export class FinanceModule extends Module {
   }
 
   /** Numeri e serie per la Home (patrimonio, investimenti, entrate/uscite, punteggi del mese). */
+  /** Una volta al giorno (e ogni volta che apri Finanze): chiede come sono state pagate le scadenze arrivate. */
+  async askDue(force = false) {
+    const day = new Date().toDateString();
+    if (!force && this._askedDay === day) return;
+    this._askedDay = day;
+    try { await askDue(await this.book()); } catch { /* dati non pronti */ }
+  }
+
   /** Stima di fine mese per la Home (null se mancano dati). */
   async getForecast() {
     try { const b = await this.book(); await b.loadRates?.(); return forecast(b); } catch { return null; }
