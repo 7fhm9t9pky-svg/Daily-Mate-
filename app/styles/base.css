@@ -420,7 +420,7 @@ body.no-tabs .tabbar{display:none}
 .due-h{display:flex;justify-content:space-between;gap:8px}.due small{color:var(--mu)}
 .due select{padding:9px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);font:inherit}
 .due-b{display:flex;flex-wrap:wrap;gap:6px}.due-b .btn{font-size:13px;padding:8px 10px}
-.undo{border:0;background:none;font-size:18px;color:var(--mu);padding:0 6px}
+.undo{border:0;background:none;font-size:12px;color:var(--neg);padding:2px 0;text-align:left;font-weight:600}
 
 /* ---------- Trascinamento quadretti ---------- */
 .sheet-tile.dnd{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}

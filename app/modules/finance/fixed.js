@@ -45,6 +45,11 @@ export function scan(book, now = new Date()) {
   return out.filter(x => !S.done[x.key]);
 }
 
+/** Scadenza finta per provare: un abbonamento di oggi (il pagamento e' vero, ma lo si puo' eliminare riaccreditando i soldi). */
+export function demoItem(now = new Date()) {
+  return { key: 'demo|' + Date.now(), i: -1, r: 0, kind: 'demo', name: 'Abbonamento di esempio', amount: 9.99, due: serialOf(now), period: 'Mese', page: 'Prova' };
+}
+
 /** Quelle da chiedere adesso: scadute o in scadenza oggi, non piu' vecchie di 14 giorni. */
 export function dueNow(book, now = new Date()) {
   const today = serialOf(now);
@@ -97,9 +102,10 @@ export async function pay(book, item, target, now = new Date()) {
   await book.loadRates?.();
   const rf = target ? deduct(book, target, item.amount) : null;
   S.done[item.key] = 1;
-  S.log.push({ id: Math.random().toString(36).slice(2, 9), d: isoOf(now), due: isoOf(dateOf(item.due)), name: item.name, amount: item.amount, page: item.page, kind: item.kind,
+  S.log.push({ id: Math.random().toString(36).slice(2, 9), d: isoOf(now), due: isoOf(dateOf(item.due)), name: item.name + (item.kind === 'demo' ? ' (prova)' : ''), amount: item.amount, page: item.page, kind: item.kind,
     bank: target ? targets(book).find(t => t.id === target)?.label || '' : '', rf, deducted: !!rf });
-  if (item.kind === 'subs') book.put(item.i, 'D' + item.r, nextDue(item.due, item.period));
+  if (item.kind === 'demo') { /* niente da aggiornare nelle pagine */ }
+  else if (item.kind === 'subs') book.put(item.i, 'D' + item.r, nextDue(item.due, item.period));
   else if (item.kind === 'bills') book.put(item.i, 'D' + item.r, 'Pagata');
   book.commit();
 }
