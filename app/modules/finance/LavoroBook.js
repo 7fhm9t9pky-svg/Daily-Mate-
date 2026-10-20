@@ -132,11 +132,14 @@ export class LavoroBook {
       if (typeof live !== 'number' || !isFinite(live)) return;
       live = Math.round(live * 100) / 100;
       const Y = now.getFullYear(), M = now.getMonth(), ym = Y + '-' + String(M + 1).padStart(2, '0');
-      const before = JSON.stringify([S.m, S.y, S.last && [S.last.ym, S.last.v]]);
+      const before = JSON.stringify([S.m, S.y, S.last && [S.last.ym, S.last.v]]) + (S.last && Number(S.last.ym.slice(0, 4)) < Y ? 'x' : '');
       if (S.last) {   // mesi/anni trascorsi dall'ultima volta: restano fermi all'ultimo valore noto
         let [ly, lm] = S.last.ym.split('-').map(Number);
         while (ly * 12 + lm < Y * 12 + M + 1 - 1) { lm++; if (lm > 12) { lm = 1; ly++; } const k = ly + '-' + String(lm).padStart(2, '0'); if (k < ym && S.m[k] == null) S.m[k] = S.last.v; }
         for (let y = Number(S.last.ym.slice(0, 4)); y < Y; y++) if (S.y[y] == null) S.y[y] = S.last.v;
+        if (Number(S.last.ym.slice(0, 4)) < Y) for (let m = 0; m < 12; m++) {   // anno nuovo: i 12 mesi ripartono vuoti (gennaio prende subito il valore corrente)
+          const a = 'B' + (29 + m); this.st.ov['4|' + a] = null; this.eng.set(sh.name, a, null);
+        }
       }
       S.m[ym] = live; S.y[Y] = live; S.last = { ym, v: live };
       if (JSON.stringify([S.m, S.y, [S.last.ym, S.last.v]]) !== before) this.onChange?.(this.st);

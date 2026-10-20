@@ -237,3 +237,4 @@ Documenti: testo scritto nell'app (scaricabile in .txt), foto (ridotte) e PDF al
 
 ## Patrimonio nel tempo automatico
 La casella del mese corrente e quella dell'anno corrente (es. 2026) seguono il patrimonio totale. Passato il mese/anno, l'ultimo valore resta fisso e si parte col successivo. Il valore fissato è quello dell'ultima volta che l'app è stata aperta o modificata.
+Anno nuovo: i 12 mesi ripartono vuoti e gennaio prende subito il patrimonio corrente; la riga dell'anno passato resta fissa.
