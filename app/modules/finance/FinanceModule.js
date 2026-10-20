@@ -89,7 +89,7 @@ export class FinanceModule extends Module {
     }
     if (arg === undefined || arg === '') this.askDue(true);
     if (arg === 'config') return new ConfigView({ book, onBack: () => this.app.router.goTo('finance') });
-    if (arg === 'fixed') return new FixedView({ book, onBack: () => this.app.router.goTo('finance') });
+    if (arg === 'fixed') return new FixedView({ book, onBack: () => this.app.router.goTo(sheetVisible(book, 5) ? 'finance/5' : 'finance'), onOpen: n => this.app.router.goTo('finance/' + n) });
     if (arg === 'forecast') return new ForecastView({ book, onBack: () => this.app.router.goTo('finance') });
     const i = arg !== undefined && arg !== '' ? Number(arg) : null;
     if (i === 0 && book.useWealth() && sheetVisible(book, 0)) {
@@ -101,12 +101,12 @@ export class FinanceModule extends Module {
     if (i !== null && book.sheets[i] && sheetVisible(book, i)) {
       return new SheetView({
         book, index: i, title: sheetTitle(book, i),
-        onBack: () => { const p = book.parentOf(i); this.app.router.goTo(p === null ? 'finance' : 'finance/' + p); },
+        onBack: () => { const p = book.parentOf(i); this.app.router.goTo(p === null ? 'finance' : p === 'fixed' ? 'finance/fixed' : 'finance/' + p); },
         onOpen: n => this.app.router.goTo('finance/' + n),
         onSaved: () => {}
       });
     }
-    return new FinanceView({ book, onOpen: n => this.app.router.goTo('finance/' + n), monthData: m => this.getHomeData(m) });
+    return new FinanceView({ book, onOpen: n => this.app.router.goTo('finance/' + n), monthData: m => this.getHomeData(m), onMoved: () => this.app.showModule('finance') });
   }
 
   /**

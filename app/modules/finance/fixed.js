@@ -7,6 +7,7 @@ const r2 = v => Math.round(v * 100) / 100;
 const serialOf = d => Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5) + 25569;
 const dateOf = v => { const u = serialToDate(v); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); };
 export const isoOf = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+export const isRestricted = book => book.st.custom.some((d, k) => { if (d.deleted) return false; for (let p = book.base + k, g = 0; p !== null && g < 50; p = book.parentOf(p), g++) if (book.parentOf(p) === 'fixed') return true; return false; });
 export const state = book => (book.st.fixed ||= { done: {}, watch: {}, log: [] });
 
 const rowsOf = (book, i) => { const o = []; for (let r = 4; r <= 300; r++) { const n = book.val(i, 'A' + r); if (n == null || n === '') { if (r > 44) break; continue; } o.push(r); } return o; };
@@ -18,9 +19,12 @@ const eurOf = (book, i, a) => book.st.cur?.[i + '!' + a]?.eur ?? numAt(book, i, 
 export function scan(book, now = new Date()) {
   const S = state(book), today = serialOf(now), out = [];
   let changed = false;
+  const inFixed = i => { for (let p = i, g = 0; p !== null && p !== undefined && g < 50; p = book.parentOf(p), g++) if (book.parentOf(p) === 'fixed') return true; return false; };
+  const restrict = book.st.custom.some((d, k) => !d.deleted && inFixed(book.base + k));      // se hai messo delle pagine dentro "Resoconto spese fisse", contano solo quelle
   book.st.custom.forEach((d, k) => {
     if (d.deleted || !d.tpl) return;
     const i = book.base + k;
+    if (restrict && !inFixed(i)) return;
     for (const r of rowsOf(book, i)) {
       const name = String(book.val(i, 'A' + r)), amount = eurOf(book, i, 'B' + r); if (!amount) continue;
       if (d.tpl === 'subs') {

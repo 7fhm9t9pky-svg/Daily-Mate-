@@ -1,6 +1,9 @@
 import { Component } from '../../ui/Component.js';
-import { state, upcoming, undo } from './fixed.js';
+import { state, upcoming, undo, isRestricted } from './fixed.js';
+import { tileHTML, askNewPage, dndHandlers } from './FinanceView.js';
+import { enableTileDnD } from './dnd.js';
 import { MES } from './LavoroBook.js';
+import { sheetVisible } from './FinanceView.js';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 const eur = n => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n || 0);
@@ -8,16 +11,18 @@ const itd = iso => iso.slice(8) + '/' + iso.slice(5, 7);
 
 /** "Resoconto spese fisse": cosa e' stato pagato (e da quale banca) mese per mese, e cosa sta per scadere. */
 export class FixedView extends Component {
-  constructor({ book, onBack }) { super(); this.book = book; this.onBack = onBack; const n = new Date(); this.y = n.getFullYear(); this.m = n.getMonth(); }
+  constructor({ book, onBack, onOpen }) { super(); this.book = book; this.onBack = onBack; this.onOpen = onOpen; const n = new Date(); this.y = n.getFullYear(); this.m = n.getMonth(); }
 
   render() {
     const el = document.createElement('section');
     el.className = 'page sheet-page';
-    el.innerHTML = '<div class="page-head"><button class="back" data-act="back">‹ Finanze</button><h1>Resoconto spese fisse</h1></div><div class="sheet-body"></div>';
+    el.innerHTML = '<div class="page-head"><button class="back" data-act="back">‹ Entrate e uscite</button><h1>Resoconto spese fisse</h1></div><div class="sheet-body"></div>';
     el.querySelector('[data-act=back]').onclick = () => this.onBack();
     el.addEventListener('click', e => {
       const t = e.target;
       if (t.closest('[data-step]')) { this.m += +t.closest('[data-step]').dataset.step; if (this.m < 0) { this.m = 11; this.y--; } if (this.m > 11) { this.m = 0; this.y++; } return this.refresh(); }
+      const tl = t.closest('.sheet-tile[data-i]'); if (tl) return this.onOpen?.(+tl.dataset.i);
+      if (t.closest('[data-newsub]')) { askNewPage('Resoconto spese fisse').then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: 'fixed' })); }); return; }
       const u = t.closest('[data-undo]');
       if (u && confirm('Annullo questo pagamento? I soldi tornano sul conto.')) { undo(this.book, u.dataset.undo); this.refresh(); }
     });
@@ -38,6 +43,11 @@ export class FixedView extends Component {
       <div class="tiles"><div class="tl auto big"><small>Pagato nel mese</small><b>${eur(tot)}</b></div>${Object.entries(by).map(([k, v]) => `<div class="tl auto"><small>${esc(k)}</small><b>${eur(v)}</b></div>`).join('')}</div>
       <h2 class="s">Pagamenti del mese</h2><div class="lst">${log.map(e => `<div class="it ln"><span>${itd(e.d)} · ${esc(e.name)}<small> ${esc(e.page || '')}${e.bank ? ' · ' + esc(e.bank) : ' · non scalato'}</small></span><b>${eur(e.amount)}</b><button class="undo" data-undo="${e.id}" aria-label="Annulla">↩</button></div>`).join('') || '<p class="empty-s">Ancora nessun pagamento registrato questo mese.</p>'}</div>
       <h2 class="s">In scadenza nei prossimi 30 giorni</h2><div class="lst">${up.map(x => `<div class="it ln"><span>${itd(new Date(Date.UTC(1899, 11, 30) + x.due * 864e5).toISOString().slice(0, 10))} · ${esc(x.name)}<small> ${esc(x.page)}</small></span><b>${eur(x.amount)}</b></div>`).join('') || '<p class="empty-s">Niente in scadenza.</p>'}</div>`;
+    const kids = this.book.childrenOf('fixed').filter(x => sheetVisible(this.book, x));
+    h += `<h2 class="s">Le tue spese fisse, a modo tuo</h2><p class="set-note">${isRestricted(this.book) ? 'Le scadenze vengono chieste solo per le pagine messe qui dentro.' : 'Trascina qui dentro (tieni premuto un quadretto) le pagine che vuoi raggruppare, per esempio Abbonamenti, Telefono, Auto. Finché qui non c\'è nulla controllo tutte le tue pagine; dopo, solo queste.'}</p>
+      <div class="dnd-up" data-dnd-up="1">⬆ Trascina qui per portare fuori da “Resoconto spese fisse”</div>
+      <div class="sheet-grid sub-grid">${kids.map(x => tileHTML(this.book, x)).join('')}<button class="sheet-tile add-tile" data-newsub="1"><h3>＋ Nuova pagina qui dentro</h3><div class="k">Modello pronto o da zero</div></button></div>`;
     this.body.innerHTML = h;
+    enableTileDnD(this.body.querySelector('.sub-grid'), dndHandlers(this.book, 'fixed', () => this.refresh()));
   }
 }

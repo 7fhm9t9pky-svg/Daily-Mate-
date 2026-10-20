@@ -2,7 +2,8 @@ import { Component } from '../../ui/Component.js';
 import { dateFieldHTML, bindDateFields, readDate } from '../../ui/dateField.js';
 import { ExportPanel } from './ExportPanel.js';
 import { serialToDate, isDateFmt, isFormula, isDependent, todaySerial } from './LavoroBook.js';
-import { tileHTML, askNewPage, sheetTitle, sheetVisible } from './FinanceView.js';
+import { tileHTML, askNewPage, sheetTitle, sheetVisible, dndHandlers } from './FinanceView.js';
+import { enableTileDnD } from './dnd.js';
 import { FormModal } from '../../ui/FormModal.js';
 import { reloadKeepingLogin } from '../../core/AuthClient.js';
 import { SHEET_HELP } from './labels.js';
@@ -36,7 +37,7 @@ export class SheetView extends Component {
 
   async afterMount() { this.refresh(); }
 
-  #parentName() { const p = this.book.parentOf(this.i); return p === null ? 'Finanze' : sheetTitle(this.book, p); }
+  #parentName() { const p = this.book.parentOf(this.i); return p === null ? 'Finanze' : p === 'fixed' ? 'Resoconto spese fisse' : sheetTitle(this.book, p); }
 
   // ---------- helpers di lettura ----------
   get s() { return this.book.sheets[this.i]; }
@@ -104,9 +105,12 @@ export class SheetView extends Component {
     }
     if (this.i === 1) h = '<button class="xbtn" data-export="1">⇪ Esporta ore</button>' + h + '<button class="add" data-tonew="1">Passa al nuovo sistema ore (nomi e paga scelti da te)</button>';
     const kids = this.book.childrenOf(this.i).filter(x => sheetVisible(this.book, x));
-    h += `<h2 class="s">Sottopagine</h2><div class="sheet-grid">${kids.map(x => tileHTML(this.book, x)).join('')}<button class="sheet-tile add-tile" data-newsub="1"><h3>＋ Nuova sottopagina</h3><div class="k">Aggiungi una pagina dentro questa</div></button></div>`;
+    const fx = this.i === 5 ? (() => { const L = this.book.st.fixed?.log || [], mk = new Date().toISOString().slice(0, 7), t = L.filter(e => e.d.startsWith(mk)).reduce((a, e) => a + e.amount, 0); return `<button class="sheet-tile" data-fixed="1"><h3>🧾 Resoconto spese fisse</h3><div class="v">${esc(new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(t))}</div><div class="k">Pagato questo mese, per banca</div></button>`; })() : '';
+    const upBar = this.book.isCustom(this.i) ? `<div class="dnd-up" data-dnd-up="1">⬆ Trascina qui per portare fuori da “${esc(this.title)}”</div>` : '';
+    h += `${upBar}<h2 class="s">Sottopagine</h2><div class="sheet-grid sub-grid">${fx}${kids.map(x => tileHTML(this.book, x)).join('')}<button class="sheet-tile add-tile" data-newsub="1"><h3>＋ Nuova sottopagina</h3><div class="k">Aggiungi una pagina dentro questa</div></button></div>`;
     if (this.book.isCustom(this.i)) h += `<button class="add" data-editpage="1">✎ Rinomina o elimina questa pagina</button>`;
     this.body.innerHTML = h || `<p class="empty">Questa scheda è vuota.</p>`;
+    enableTileDnD(this.body.querySelector('.sub-grid'), dndHandlers(this.book, this.i, () => this.refresh()));
     const sc = this.el.closest('.app-main'); if (sc) sc.scrollTop = keep;
     void s;
   }
@@ -199,6 +203,7 @@ export class SheetView extends Component {
       if (!st.jobs.length && confirm('Vuoi portare nel nuovo sistema le ore già inserite (Switch Evolution e Cantiere, con paga e acconti)?\n\nOK = sì, porta i dati. Annulla = parti da zero.')) this.book.importLegacyHours();
       st.mode = 'new'; this.book.commit(); setTimeout(() => reloadKeepingLogin(), 900); return;
     }
+    if (e.target.closest('[data-fixed]')) { this.onOpen?.('fixed'); return; }
     const tl = e.target.closest('.sheet-tile[data-i]'); if (tl) { this.onOpen?.(+tl.dataset.i); return; }
     if (e.target.closest('[data-newsub]')) { askNewPage(this.title).then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: this.i })); }); return; }
     if (e.target.closest('[data-editpage]')) { this.#editPage(); return; }

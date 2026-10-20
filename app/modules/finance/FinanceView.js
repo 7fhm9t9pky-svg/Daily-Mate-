@@ -5,6 +5,7 @@ import { forecast } from './forecast.js';
 import { TEMPLATES, TEMPLATE_GROUPS, templateById } from './templates.js';
 import { parseNum } from '../../core/format.js';
 import { money } from './wealth.js';
+import { enableTileDnD } from './dnd.js';
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -121,22 +122,37 @@ export function tileHTML(book, i, first = false) {
   </button>`;
 }
 
+/** Cosa succede quando lasci un quadretto: `container` e' la pagina che contiene la griglia (null = Finanze). */
+export function dndHandlers(book, container, done, up = undefined) {
+  return {
+    canDrag: i => book.isCustom(i),
+    onDrop: (src, t) => {
+      let ok = false;
+      if (t.zone === 'up') ok = book.moveCustom(src, up === undefined ? (container === 'fixed' ? 5 : book.parentOf(container) ?? null) : up);
+      else if (t.fixed) ok = book.moveCustom(src, 'fixed');
+      else if (t.zone === 'into') ok = book.moveCustom(src, t.i);
+      else ok = book.moveCustom(src, container, t.i, t.zone);
+      if (ok) done();
+    }
+  };
+}
+
 /** Pagina Finanze: un quadretto per ogni scheda del foglio Lavoro. */
 export class FinanceView extends Component {
-  constructor({ book, onOpen, monthData }) { super(); this.book = book; this.onOpen = onOpen; this.monthData = monthData; }
+  constructor({ book, onOpen, monthData, onMoved }) { super(); this.book = book; this.onOpen = onOpen; this.monthData = monthData; this.onMoved = onMoved; }
 
   render() {
     const el = document.createElement('section');
     el.className = 'page';
     const bk = this.book;
-    const ids = bk.sheets.map((_, i) => i).filter(i => bk.parentOf(i) === null && sheetVisible(bk, i));
+    const ids = bk.topLevel().filter(i => sheetVisible(bk, i));
     let fv = '—', fk = 'Fine mese e mese dopo, con i consigli';
     try { const F = forecast(bk); fv = F.usualDaily == null && !F.sure.length ? 'Registra qualche spesa' : new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(F.endMonth); fk = `Stima a fine ${F.month}`; } catch { /* dati incompleti */ }
     const fcTile = `<button class="sheet-tile fc-tile" data-fc="1"><h3>📈 Prospettiva</h3><div class="v">${esc(fv)}</div><div class="k">${esc(fk)}</div></button>`;
     const fx = bk.st.fixed, mk = new Date().toISOString().slice(0, 7), fxTot = (fx?.log || []).filter(e => e.d.startsWith(mk)).reduce((a, e) => a + e.amount, 0);
     const fixTile = `<button class="sheet-tile" data-fixed="1"><h3>🧾 Resoconto spese fisse</h3><div class="v">${esc(new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(fxTot))}</div><div class="k">Pagato questo mese, per banca</div></button>`;
     const cfgTile = `<button class="sheet-tile cfg-tile" data-cfg="1"><h3>⚙ Configurazione</h3><div class="v">${esc(bk.banks().slice(0, 2).join(' · ') || 'Banche, paga, valuta')}</div><div class="k">Scrivi una volta i tuoi dati fissi</div></button>`;
-    const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + fcTile + fixTile + cfgTile + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
+    const tiles = ids.map((i, n) => tileHTML(bk, i, n === 0)).join('') + fcTile + (sheetVisible(bk, 5) ? '' : fixTile) + cfgTile + '<button class="sheet-tile add-tile" data-new="1"><h3>＋ Nuova pagina</h3><div class="k">Scegli un modello pronto o parti da zero</div></button>';
     const MES = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'], mi = new Date().getMonth();
     const pills = [bk.sheets[5] && sheetVisible(bk, 5) ? ['Movimenti', 5] : null, bk.sheets[0] && sheetVisible(bk, 0) ? ['Conti', 0] : null].filter(Boolean);
     el.innerHTML = `<div class="seg fin-seg"><button class="on">Panoramica</button>${pills.map(([l, i]) => `<button data-open="${i}">${l}</button>`).join('')}</div>
@@ -151,7 +167,8 @@ export class FinanceView extends Component {
       box.innerHTML = `<h4>${MES[mi][0].toUpperCase() + MES[mi].slice(1)}</h4><div class="fm-row"><div><small>Entrate</small><b class="pos">${f(m.entrate)}</b></div><div><small>Uscite</small><b class="neg">${f(m.uscite)}</b></div><div><small>Saldo</small><b class="${sal < 0 ? 'neg' : 'pos'}">${f(sal)}</b></div></div>`;
       box.hidden = false;
     }).catch(() => {});
-    el.querySelector('[data-fixed]').onclick = () => this.onOpen('fixed');
+    el.querySelector('[data-fixed]')?.addEventListener('click', () => this.onOpen('fixed'));
+    enableTileDnD(el.querySelector('.sheet-grid'), dndHandlers(bk, null, () => this.onMoved?.()));
     el.querySelector('[data-fc]').onclick = () => this.onOpen('forecast');
     el.querySelector('[data-cfg]').onclick = () => this.onOpen('config');
     el.querySelector('[data-new]').onclick = async () => {

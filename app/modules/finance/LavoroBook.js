@@ -238,7 +238,25 @@ export class LavoroBook {
   customDef(i) { return this.st.custom[i - this.base] || null; }
   /** Indice della scheda "madre" (null = pagina principale di Finanze). */
   parentOf(i) { return this.isCustom(i) ? (this.customDef(i).parent ?? null) : null; }
-  childrenOf(i) { return this.st.custom.map((d, k) => [d, this.base + k]).filter(([d, x]) => !d.deleted && (d.parent ?? null) === i).map(([, x]) => x); }
+  childrenOf(i) { return this.st.custom.map((d, k) => [d, this.base + k]).filter(([d, x]) => !d.deleted && (d.parent ?? null) === i).sort((a, b) => (a[0].ord ?? a[1] * 10) - (b[0].ord ?? b[1] * 10) || a[1] - b[1]).map(([, x]) => x); }
+  /** Pagine della schermata principale di Finanze: prima le originali, poi le tue nell'ordine scelto. */
+  topLevel() { return [...this.sheets.map((_, i) => i).filter(i => !this.isCustom(i) && this.parentOf(i) === null), ...this.childrenOf(null)]; }
+  /** Antenati (per non mettere una pagina dentro se stessa). */
+  #isInside(i, anc) { for (let p = this.parentOf(i), g = 0; p !== null && p !== 'fixed' && g < 50; p = this.parentOf(p), g++) if (p === anc) return true; return false; }
+  /**
+   * Sposta una tua pagina: `parent` = null (Finanze), un numero (dentro quella pagina) o 'fixed' (dentro Resoconto spese fisse).
+   * Con `ref` e `where` ('before'/'after') la mette accanto a un'altra, altrimenti in fondo.
+   */
+  moveCustom(i, parent, ref = null, where = 'after') {
+    const d = this.customDef(i); if (!d || parent === i || (typeof parent === 'number' && this.#isInside(parent, i))) return false;
+    d.parent = parent;
+    const sib = this.childrenOf(parent).filter(x => x !== i);
+    let at = ref != null && sib.includes(ref) ? sib.indexOf(ref) + (where === 'after' ? 1 : 0) : sib.length;
+    sib.splice(at, 0, i);
+    sib.forEach((x, k) => { this.customDef(x).ord = k * 10; });
+    this.commit();
+    return true;
+  }
 
   addCustom({ name, parent = null, cols, total, tpl, params }) {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 4);

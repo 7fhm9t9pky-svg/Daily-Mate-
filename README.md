@@ -248,3 +248,5 @@ Prospettiva: aggiunta la stima del patrimonio totale (soldi dopo le spese + da i
 
 ## Resoconto spese fisse
 Quando arriva la data di un abbonamento, di una bolletta o di una spesa segnata con data futura (Auto, Telefono…), l'app chiede con quale banca hai pagato, scala la cifra dal conto e la scrive nel nuovo "Resoconto spese fisse" (Finanze), mese per mese e per banca. Si può annullare un pagamento (i soldi tornano sul conto). Gli abbonamenti passano da soli al rinnovo successivo, le bollette diventano "Pagata".
+
+Resoconto spese fisse ora è una sottopagina di "Entrate e uscite". Tenendo premuto un quadretto lo si trascina: al centro di un altro (dentro quella pagina o dentro Resoconto spese fisse), sul bordo (prima/dopo, cambia l'ordine), sulla barra tratteggiata (fuori). Se dentro Resoconto spese fisse ci sono delle pagine, le scadenze si chiedono solo per quelle.

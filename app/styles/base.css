@@ -421,3 +421,13 @@ body.no-tabs .tabbar{display:none}
 .due select{padding:9px;border-radius:12px;border:1.5px solid var(--ln);background:var(--pa);font:inherit}
 .due-b{display:flex;flex-wrap:wrap;gap:6px}.due-b .btn{font-size:13px;padding:8px 10px}
 .undo{border:0;background:none;font-size:18px;color:var(--mu);padding:0 6px}
+
+/* ---------- Trascinamento quadretti ---------- */
+.sheet-tile.dnd{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.sheet-tile.drop-into{outline:3px solid var(--acc);outline-offset:-3px;background:var(--soft)}
+.sheet-tile.drop-before{box-shadow:inset 6px 0 0 var(--acc)}
+.sheet-tile.drop-after{box-shadow:inset -6px 0 0 var(--acc)}
+.dnd-up{display:none;margin:10px 0 0;padding:14px;border:2px dashed var(--acc);border-radius:16px;color:var(--acc);text-align:center;font-weight:600;font-size:13px}
+.dnd-up.drop-into{background:var(--soft)}
+body.dnd-on .dnd-up{display:block}
+body.dnd-on{-webkit-user-select:none;user-select:none}
