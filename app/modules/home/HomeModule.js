@@ -59,7 +59,7 @@ class HomeView extends Component {
   async #drawForecast() {
     const box = this.el.querySelector('#h-fc'), fin = this.m.app.registry.get('finance'); if (!box || !fin) return;
     const F = await fin.getForecast(); if (!F || (F.usualDaily == null && !F.sure?.length)) return;
-    box.innerHTML = `<div class="sub">Stima a fine ${esc(F.month)}</div><div class="v">${eur(F.endMonth)}</div>`;
+    box.innerHTML = `<div class="sub">Stima a fine ${esc(F.month)}</div><div class="v">${eur(F.endMonth)}</div><div class="sub">Patrimonio totale stimato: <b>${eur(F.total.end)}</b></div>`;
     box.closest('.fc-home').hidden = false;
   }
 

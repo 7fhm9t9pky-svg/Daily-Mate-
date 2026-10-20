@@ -93,7 +93,15 @@ export function forecast(book, now = new Date()) {
   const sureTot = sum(sure), usualLeft = (usualDaily || 0) * daysLeft;
   const endMonth = liquid - sureTot - usualLeft;
   const nextSure = sum(next), nextUsual = (usualDaily || 0) * nDays;
-  const F = { liquid, sure, sureTot, usualDaily, usualLeft, source, daysLeft, endMonth, month: monthName(m), nextMonth: monthName(m + 1),
+  // investimenti: quanto crescono (o calano) in media a settimana, guardando lo storico settimanale dell'"Andamento %"
+  const inv = book.st.snap?.inv, pts = inv ? [...inv.closed.map(x => ({ d: x.d, v: x.v })), { d: Math.round(Date.UTC(+inv.wk.slice(0, 4), +inv.wk.slice(5, 7) - 1, +inv.wk.slice(8, 10)) / 864e5) + 25569, v: inv.v }].slice(-6) : [];
+  let slope = 0, basis = 'nessuno';
+  if (pts.length >= 2 && pts[pts.length - 1].d > pts[0].d) { slope = Math.max(-3, Math.min(3, (pts[pts.length - 1].v - pts[0].v) / ((pts[pts.length - 1].d - pts[0].d) / 7))); basis = 'storico'; }
+  const invNow = owner ? (n(0, 'B11') || 0) : (book.wealthTotals('EUR').invested || 0), capital = book.investedEur() || 0;
+  const invAt = days => invNow + capital * (slope * days / 7) / 100;
+  const base = endMonth + sum(incoming);
+  const total = { now: liquid + invNow + sum(incoming), end: base + invAt(daysLeft), endNext: endMonth - nextSure - nextUsual + sum(incoming) + invAt(daysLeft + nDays), invNow, invEnd: invAt(daysLeft), slope, basis, weeks: pts.length };
+  const F = { total, liquid, sure, sureTot, usualDaily, usualLeft, source, daysLeft, endMonth, month: monthName(m), nextMonth: monthName(m + 1),
     next, nextSure, nextUsual, endNext: endMonth - nextSure - nextUsual, incoming, incomingTot: sum(incoming), subsMonthly, subsCount, unknown, overdue, expRows };
   F.tips = tips(book, F, { owner, today, m, W });
   return F;
