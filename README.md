@@ -240,3 +240,5 @@ La casella del mese corrente e quella dell'anno corrente (es. 2026) seguono il p
 Anno nuovo: i 12 mesi ripartono vuoti e gennaio prende subito il patrimonio corrente; la riga dell'anno passato resta fissa.
 
 Aggiornamenti: il server chiede l'ultima versione direttamente a git (sempre aggiornata, nessun limite orario), con l'API di GitHub solo come ripiego.
+
+Storico settimanale investimenti: l'ultima riga segue l'Andamento % degli Investimenti aperti; ogni lunedì si ferma, scorre su e la settimana più vecchia sparisce (8 settimane chiuse + quella in corso).

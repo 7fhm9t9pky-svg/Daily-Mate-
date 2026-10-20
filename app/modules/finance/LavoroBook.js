@@ -36,7 +36,7 @@ export class LavoroBook {
       work: Object.assign({ jobs: [], adv: [], owed: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
       cfg: Object.assign({ banks: null, rate: '' }, saved?.cfg),                  // Configurazione: banche, paga standard
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
-      snap: Object.assign({ m: {}, y: {}, last: null }, saved?.snap || {}),       // patrimonio mese per mese / anno per anno (si ferma da solo quando il periodo finisce)
+      snap: Object.assign({ m: {}, y: {}, last: null, inv: null }, saved?.snap || {}),       // patrimonio mese per mese / anno per anno (si ferma da solo quando il periodo finisce)
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };
     migratePays(this.st.work, this.st.cfg.rate);                    // paghe nominate per lavoro
@@ -126,6 +126,7 @@ export class LavoroBook {
    * Il valore e' quello dell'ultima volta che l'app e' stata aperta o modificata (i dati cambiano solo allora).
    */
   trackPatrimonio(now = new Date()) {
+    this.trackInvest(now);
     const run = () => {
       const S = this.st.snap, sh = this.D.sheets[4]; if (!sh) return;
       let live = this.useWealth() ? this.wealthTotals('EUR').total : this.num(0, 'A6');
@@ -155,6 +156,35 @@ export class LavoroBook {
     };
     if (this.useWealth()) return this.loadRates().then(run).catch(() => {});
     run(); return Promise.resolve();
+  }
+
+  /**
+   * "Storico settimanale" (grafico investimenti): l'ultima riga e' la settimana in corso e segue l'"Andamento %" degli
+   * Investimenti aperti; a ogni nuova settimana quel valore si ferma, la riga si sposta su e la settimana piu' vecchia sparisce.
+   */
+  trackInvest(now = new Date()) {
+    const sh = this.D.sheets[4], K = this.num(2, 'K2'); if (!sh || typeof K !== 'number' || !isFinite(K)) return;
+    const live = Math.round(K * 100) / 100, S = this.st.snap, FIRST = 52, LAST = 60, KEEP = LAST - FIRST;      // 8 settimane chiuse + quella in corso
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate()); day.setDate(day.getDate() - ((day.getDay() + 6) % 7));   // lunedi'
+    const iso = day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0');
+    const serial = i => Math.round(Date.UTC(+i.slice(0, 4), +i.slice(5, 7) - 1, +i.slice(8, 10)) / 864e5) + 25569;
+    const before = JSON.stringify(S.inv);
+    if (!S.inv) {
+      const closed = [];
+      for (let r = FIRST; r < LAST; r++) { const d = this.val(4, 'A' + r), v = this.val(4, 'B' + r); if (typeof d === 'number' && typeof v === 'number') closed.push({ d, v }); }
+      S.inv = { closed, wk: iso, v: live };
+    } else if (S.inv.wk !== iso) {
+      S.inv.closed.push({ d: serial(S.inv.wk), v: S.inv.v });
+      while (S.inv.closed.length > KEEP) S.inv.closed.shift();
+      S.inv.wk = iso;
+    }
+    S.inv.v = live;
+    if (JSON.stringify(S.inv) !== before) this.onChange?.(this.st);
+    for (let i = 0; i < KEEP; i++) {
+      const e = S.inv.closed[i];
+      this.eng.set(sh.name, 'A' + (FIRST + i), e ? e.d : null); this.eng.set(sh.name, 'B' + (FIRST + i), e ? e.v : null);
+    }
+    this.eng.set(sh.name, 'A' + LAST, serial(S.inv.wk)); this.eng.set(sh.name, 'B' + LAST, live); sh.fmt['A' + LAST] = 'd/m';
   }
 
   /** L'amministratore col nuovo sistema ore: "Paga da ricevere" del Patrimonio usa le ore nuove (non piu' la scheda originale). */
