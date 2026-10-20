@@ -1,6 +1,5 @@
 import { Component } from '../../ui/Component.js';
 import { state, inMonth, undo, isRestricted } from './fixed.js';
-import { askDue } from './fixedAsk.js';
 import { tileHTML, askNewPage, dndHandlers } from './FinanceView.js';
 import { enableTileDnD } from './dnd.js';
 import { MES } from './LavoroBook.js';
@@ -24,7 +23,6 @@ export class FixedView extends Component {
       if (t.closest('[data-step]')) { this.m += +t.closest('[data-step]').dataset.step; if (this.m < 0) { this.m = 11; this.y--; } if (this.m > 11) { this.m = 0; this.y++; } return this.refresh(); }
       const tl = t.closest('.sheet-tile[data-i]'); if (tl) return this.onOpen?.(+tl.dataset.i);
       if (t.closest('[data-newsub]')) { askNewPage('Resoconto spese fisse').then(d => { if (d) this.onOpen?.(this.book.addCustom({ ...d, parent: 'fixed' })); }); return; }
-      if (t.closest('[data-demo]')) { askDue(this.book, { demo: true }).then(() => this.refresh()); return; }
       const u = t.closest('[data-undo]');
       if (u) { const e = state(this.book).log.find(x => x.id === u.dataset.undo); if (e && confirm(e.deducted ? `Elimino questo pagamento e rimetto ${eur(e.amount)} su ${e.bank}?` : 'Elimino questo pagamento dal resoconto?')) { undo(this.book, e.id); this.refresh(); } }
     });
@@ -43,7 +41,7 @@ export class FixedView extends Component {
     let h = `<p class="hint">💡 Quando arriva il giorno di un abbonamento, di una bolletta o di una spesa con la data nel futuro, l'app ti chiede con quale banca hai pagato e scala i soldi da sola. Qui trovi tutto.</p>
       <div class="cal-nav"><button class="btn" data-step="-1">‹</button><b>${MES[this.m][0].toUpperCase() + MES[this.m].slice(1)} ${this.y}</b><button class="btn" data-step="1">›</button></div>
       <div class="tiles"><div class="tl auto big"><small>Pagato nel mese</small><b>${eur(tot)}</b></div>${Object.entries(by).map(([k, v]) => `<div class="tl auto"><small>${esc(k)}</small><b>${eur(v)}</b></div>`).join('')}</div>
-      <button class="add" data-demo="1">🧪 Prova con una scadenza finta</button><h2 class="s">Pagamenti del mese</h2><div class="lst">${log.map(e => `<div class="it ln"><span>${itd(e.d)} · ${esc(e.name)}<small> ${esc(e.page || '')}${e.bank ? ' · ' + esc(e.bank) : ' · non scalato'}</small></span><b>${eur(e.amount)}</b><button class="undo" data-undo="${e.id}">🗑 Elimina${e.deducted ? ' e riaccredita' : ''}</button></div>`).join('') || '<p class="empty-s">Ancora nessun pagamento registrato questo mese.</p>'}</div>
+      <h2 class="s">Pagamenti del mese</h2><div class="lst">${log.map(e => `<div class="it ln"><span>${itd(e.d)} · ${esc(e.name)}<small> ${esc(e.page || '')}${e.bank ? ' · ' + esc(e.bank) : ' · non scalato'}</small></span><b>${eur(e.amount)}</b><button class="undo" data-undo="${e.id}">🗑 Elimina${e.deducted ? ' e riaccredita' : ''}</button></div>`).join('') || '<p class="empty-s">Ancora nessun pagamento registrato questo mese.</p>'}</div>
       <h2 class="s">Scadenze di ${MES[this.m]} ancora da pagare</h2><div class="lst">${up.map(x => `<div class="it ln"><span>${itd(new Date(Date.UTC(1899, 11, 30) + x.due * 864e5).toISOString().slice(0, 10))} · ${esc(x.name)}<small> ${esc(x.page)}</small></span><b>${eur(x.amount)}</b></div>`).join('') || '<p class="empty-s">Nessuna scadenza in arrivo questo mese.</p>'}</div>`;
     const kids = this.book.childrenOf('fixed').filter(x => sheetVisible(this.book, x));
     h += `<h2 class="s">Le tue spese fisse, a modo tuo</h2><p class="set-note">${isRestricted(this.book) ? 'Le scadenze vengono chieste solo per le pagine messe qui dentro.' : 'Trascina qui dentro (tieni premuto un quadretto) le pagine che vuoi raggruppare, per esempio Abbonamenti, Telefono, Auto. Finché qui non c\'è nulla controllo tutte le tue pagine; dopo, solo queste.'}</p>
