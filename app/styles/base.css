@@ -431,3 +431,24 @@ body.no-tabs .tabbar{display:none}
 .dnd-up.drop-into{background:var(--soft)}
 body.dnd-on .dnd-up{display:block}
 body.dnd-on{-webkit-user-select:none;user-select:none}
+
+/* ---------- Assistente ---------- */
+.ai-btn{position:fixed;right:18px;bottom:calc(152px + env(safe-area-inset-bottom,0px));width:46px;height:46px;border-radius:50%;border:0;background:var(--pa);color:var(--acc);font-size:21px;box-shadow:0 6px 20px #0003;z-index:14}
+body.no-tabs .ai-btn{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+.ai-panel{position:fixed;right:0;bottom:0;width:min(100vw,460px);height:min(82vh,700px);background:var(--bg);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px #0006;z-index:60;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.ai-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px}
+.ai-x{border:0;background:none;color:var(--mu);font-size:14px;padding:6px 8px}
+.ai-msgs{flex:1;overflow:auto;padding:4px 14px;display:flex;flex-direction:column;gap:8px}
+.ai-m{max-width:86%;padding:10px 13px;border-radius:18px;line-height:1.4;font-size:14.5px}
+.ai-m.bot{background:var(--pa);align-self:flex-start;box-shadow:var(--sh)}
+.ai-m.me{background:var(--acc);color:var(--on-acc);align-self:flex-end}
+.ai-act{align-self:flex-start;background:var(--soft);color:var(--acc);border-radius:14px;padding:7px 11px;font-size:13px;font-weight:600}
+.ai-act.bad{background:var(--r);color:var(--ink)}
+.ai-act button{border:0;background:var(--acc);color:var(--on-acc);border-radius:10px;padding:3px 9px;margin-left:6px;font-size:12px}
+.ai-sug{display:flex;flex-wrap:wrap;gap:6px}.ai-sug button{border:1.5px solid var(--ln);background:var(--pa);border-radius:999px;padding:8px 12px;font-size:13px}
+.ai-form{display:flex;gap:8px;padding:10px 12px}
+.ai-form textarea{flex:1;resize:none;border:1.5px solid var(--ln);background:var(--pa);border-radius:18px;padding:11px 14px;font:inherit;color:var(--ink);max-height:110px}
+.ai-form button{border:0;background:var(--acc);color:var(--on-acc);border-radius:50%;width:44px;height:44px;font-size:18px}
+.ai-setup{padding:10px 16px;font-size:14px}.ai-setup input{width:100%;padding:10px;border:1.5px solid var(--ln);border-radius:12px;margin:6px 0;background:var(--pa);color:var(--ink)}
+.ai-typing{opacity:.6}
+@media(min-width:900px){.ai-btn{right:34px;bottom:92px}body.no-tabs .ai-btn{bottom:92px}.ai-panel{right:24px;bottom:24px;border-radius:24px;height:min(78vh,680px)}}

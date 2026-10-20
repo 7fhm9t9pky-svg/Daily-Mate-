@@ -18,7 +18,7 @@ class HomeView extends Component {
     const el = document.createElement('section');
     el.className = 'page home';
     const app = this.m.app, name = app.displayName(), welcome = app.ui?.welcome || '';
-    const show = id => !app.isHidden(id), nm = (id, d) => app.ui?.labels?.[id] || d;
+    const show = id => !app.isHidden(id), nm = (id, d) => app.label?.(id) || d;
     el.innerHTML = `
       <div class="hero"><h1>Ciao${name ? ' ' + esc(name) : ''}</h1>${welcome ? `<p>${esc(welcome)}</p>` : ''}</div>
       <div class="quick">${[['calendar', 'calendar', 'Evento', '📅'], ['alerts', 'alerts', 'Scadenza', '⏰'], ['notes', 'alerts/notes', 'Nota', '📝'], ['documents', 'documents', 'Documento', '📄'], ['contacts', 'contacts', 'Contatto', '👤']].filter(([, path]) => show(path.split('/')[0])).map(([k, path, l, ic]) => `<button data-q="${k}" data-path="${path}"><i>${ic}</i><span>${l}</span></button>`).join('')}</div>

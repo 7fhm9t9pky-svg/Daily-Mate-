@@ -67,6 +67,15 @@ class SettingsView extends Component {
         <div class="set-line"><button class="btn primary" id="upd-save">Salva</button><button class="btn" id="upd-now">Controlla ora</button></div>
         <em id="upd-msg" class="xmsg"></em>
       </div>
+      <div class="set-block" id="set-ai" hidden>
+        <h3>Assistente virtuale</h3>
+        <p class="set-note" id="ai-st"></p>
+        <label class="fl"><span>Chiave Anthropic (resta solo sul tuo PC)</span><input id="ai-key2" type="password" placeholder="sk-ant-… (lascia vuoto per non cambiarla)" autocomplete="off"></label>
+        <label class="fl"><span>Modello</span><input id="ai-model" type="text" autocomplete="off"></label>
+        <div class="set-line"><button class="btn primary" id="ai-save">Salva</button></div>
+        <em id="ai-msg" class="xmsg"></em>
+        <h3 style="margin-top:14px">Richieste degli utenti</h3><div id="ai-reqs"></div>
+      </div>
       <div class="set-block"><h3>Account</h3><div class="set-line"><span>${esc(app.auth.user?.username || '')}${app.roleLabel() ? ` <em class="badge">${app.roleLabel()}</em>` : ''}</span><button class="btn" id="set-logout">Esci</button></div></div>` : ''}`;
 
     body.querySelector('#set-name-save').onclick = async () => {
@@ -153,6 +162,24 @@ class SettingsView extends Component {
       };
       body.querySelector('#upd-save').onclick = () => call('/api/update/config', 'PUT', { repo: body.querySelector('#upd-repo').value });
       body.querySelector('#upd-now').onclick = () => call('/api/update/now', 'POST');
+    })();
+    (async () => {   // assistente: solo per il proprietario
+      if (!app.isOwner?.()) return;
+      const box = body.querySelector('#set-ai'); if (!box) return;
+      const api = (u, o) => app.auth.api(u, o);
+      const draw = async () => {
+        const st = await api('/api/assistant/status'); box.hidden = false;
+        body.querySelector('#ai-st').textContent = st.enabled ? 'Attivo: gli utenti vedono il pulsante ✨ e possono chiedere aiuto. Ogni domanda usa un po\' del tuo credito Anthropic.' : 'Non ancora attivo: incolla la chiave per accenderlo.';
+        body.querySelector('#ai-model').value = st.model || '';
+        const { requests } = await api('/api/assistant/requests');
+        body.querySelector('#ai-reqs').innerHTML = requests.length ? requests.slice().reverse().map(r => `<div class="set-line"><span><b>${esc(r.user)}</b> · ${new Date(r.at).toLocaleDateString('it-IT')}<br>${esc(r.text)}</span><button class="btn" data-del="${r.id}">Fatto</button></div>`).join('') : '<p class="set-note">Nessuna richiesta.</p>';
+      };
+      try { await draw(); } catch { return; }
+      body.querySelector('#ai-save').onclick = async () => {
+        const msg = body.querySelector('#ai-msg'), k = body.querySelector('#ai-key2').value.trim();
+        try { await api('/api/assistant/config', { method: 'PUT', body: JSON.stringify({ ...(k ? { apiKey: k } : {}), model: body.querySelector('#ai-model').value }) }); body.querySelector('#ai-key2').value = ''; msg.textContent = 'Salvato'; await draw(); } catch (e) { msg.textContent = '⚠ ' + e.message; }
+      };
+      box.addEventListener('click', async e => { const d = e.target.closest('[data-del]'); if (d) { await api('/api/assistant/requests/' + d.dataset.del, { method: 'DELETE' }); draw(); } });
     })();
     body.querySelector('#set-logout')?.addEventListener('click', () => { app.auth.logout(); location.reload(); });
   }

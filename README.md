@@ -251,3 +251,8 @@ Quando arriva la data di un abbonamento, di una bolletta o di una spesa segnata 
 
 Resoconto spese fisse ora è una sottopagina di "Entrate e uscite". Tenendo premuto un quadretto lo si trascina: al centro di un altro (dentro quella pagina o dentro Resoconto spese fisse), sul bordo (prima/dopo, cambia l'ordine), sulla barra tratteggiata (fuori). Se dentro Resoconto spese fisse ci sono delle pagine, le scadenze si chiedono solo per quelle.
 Nel Resoconto spese fisse c'è 'Prova con una scadenza finta' e ogni pagamento si elimina riaccreditando i soldi sul conto.
+
+## Assistente virtuale
+Pulsante ✨ in ogni schermata: spiega dove mettere i dati, inserisce eventi, scadenze, note, contatti, documenti, conti e crediti al posto dell'utente, personalizza colore/nome/menu e invia richieste all'amministratore (Impostazioni > Assistente virtuale).
+Serve una chiave Anthropic: si incolla nel pannello dell'assistente (o in Impostazioni) e resta solo sul PC (`server/data/assistant.json`), oppure in `server/.env` come `ANTHROPIC_API_KEY=...`. Modello predefinito: claude-haiku-5-5 (cambiabile). Limite: 60 messaggi/ora per utente.
+Privacy: all'assistente vanno solo i messaggi della chat, la data di oggi, il nome e la pagina aperta; i dati salvati non vengono letti se non quando l'assistente chiede l'elenco delle pagine/conti (solo i nomi, mai gli importi).

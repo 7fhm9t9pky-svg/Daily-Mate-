@@ -3,6 +3,7 @@ import * as notif from './notify/notifyService.js';
 import { groupRoutes } from './groups/groupRoutes.js';
 import { chatRoutes } from './groups/chatRoutes.js';
 import { getRates } from './rates/rates.js';
+import { assistantRoutes } from './assistant/assistantRoutes.js';
 
 /**
  * Tabella delle rotte "nuove" (notifiche, push, amministrazione). Ogni rotta e' una
@@ -35,6 +36,7 @@ export const apiRoutes = [
   { method: 'get', path: '/api/rates', auth: 'user', handler: async () => ({ json: await getRates() }) },
   ...groupRoutes,
   ...chatRoutes,
+  ...assistantRoutes,
   // ---- notifiche dell'utente
   { method: 'get', path: '/api/notifications', auth: 'user', handler: ({ userId }) => ({ json: { ...notif.listFor(userId), ui: db.getUi(userId), role: db.role(userId), devices: notif.deviceCount(userId) } }) },
   { method: 'post', path: '/api/notifications/read', auth: 'user', handler: async ({ userId, body }) => { await notif.markRead(userId, body?.ids === 'all' ? 'all' : body?.ids); return { json: { ok: true } }; } },

@@ -59,6 +59,7 @@ export class App {
     await this.theme.setForced(this.ui);
     await this.theme.init();
     this.profile = (await this.settings.get('profile')) || {};
+    this.selfUi = (await this.settings.get('selfui')) || {};   // scelte dell'utente (anche fatte con l'assistente): nomi e pagine nascoste
     for (const m of this.registry.list()) await m.init?.();
     this.renderNav();
     this.router.init();
@@ -86,8 +87,14 @@ export class App {
   toggleDrawer(open) { this.drawerEl.classList.toggle('open', open); }
 
   /** Pagine mostrate a questo utente (alcune possono essere nascoste dall'amministratore). */
-  isHidden(id) { return (this.ui.hidden || []).includes(id); }
-  moduleName(m) { return this.ui.labels?.[m.id] || m.name; }
+  isHidden(id) { return (this.ui.hidden || []).includes(id) || (id !== 'home' && id !== 'settings' && (this.selfUi?.hidden || []).includes(id)); }
+  label(id, fallback = '') { return this.ui.labels?.[id] || this.selfUi?.labels?.[id] || fallback; }
+  moduleName(m) { return this.label(m.id, m.name); }
+  async setSelfUi(next) {
+    this.selfUi = { labels: next.labels || {}, hidden: next.hidden || [] };
+    await this.settings.set('selfui', this.selfUi);
+    await this.applyUi(this.ui);
+  }
   isAdmin() { return !!this.auth?.user?.isAdmin; }                                   // permessi amministrativi (proprietario o visitatore)
   isOwner() { return !!this.auth?.user?.isOwner; }                                   // proprietario: unico a vedere i dati personali di Finanze
   roleLabel() { return this.isOwner() ? 'Amministratore' : this.isAdmin() ? 'Visitatore' : ''; }

@@ -12,6 +12,7 @@ import { AlertsModule } from './modules/alerts/AlertsModule.js';
 import { FinanceModule } from './modules/finance/FinanceModule.js';
 import { ActivityModule } from './modules/activity/ActivityModule.js';
 import { AdminModule } from './modules/admin/AdminModule.js';
+import { Assistant } from './core/Assistant.js';
 import { Notifier } from './core/Notifier.js';
 import { UpdateWatcher } from './core/UpdateWatcher.js';
 import { IdleLogout } from './core/IdleLogout.js';
@@ -42,6 +43,7 @@ function boot() {
 
   app.start();
   new UpdateWatcher().start();
+  app.assistant = new Assistant(app); app.assistant.mount();
   app.notifier = new Notifier(app);
   app.notifier.start();
   app.idle = new IdleLogout(app); app.idle.start();                  // fuori dopo 3 minuti di inattività
