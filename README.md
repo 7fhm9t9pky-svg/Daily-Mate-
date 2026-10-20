@@ -242,3 +242,4 @@ Anno nuovo: i 12 mesi ripartono vuoti e gennaio prende subito il patrimonio corr
 Aggiornamenti: il server chiede l'ultima versione direttamente a git (sempre aggiornata, nessun limite orario), con l'API di GitHub solo come ripiego.
 
 Storico settimanale investimenti: l'ultima riga segue l'Andamento % degli Investimenti aperti; ogni lunedì si ferma, scorre su e la settimana più vecchia sparisce (8 settimane chiuse + quella in corso).
+Il grafico settimanale si chiama ora 'Andamento investimenti'; le settimane passate scritte a mano diventano lo storico.

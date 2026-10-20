@@ -168,6 +168,11 @@ export class LavoroBook {
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate()); day.setDate(day.getDate() - ((day.getDay() + 6) % 7));   // lunedi'
     const iso = day.getFullYear() + '-' + String(day.getMonth() + 1).padStart(2, '0') + '-' + String(day.getDate()).padStart(2, '0');
     const serial = i => Math.round(Date.UTC(+i.slice(0, 4), +i.slice(5, 7) - 1, +i.slice(8, 10)) / 864e5) + 25569;
+    if (S.inv?.dirty) {   // settimane scritte a mano: diventano il nuovo storico (in ordine di data)
+      const closed = [];
+      for (let r = FIRST; r < LAST; r++) { const d = this.val(4, 'A' + r), v = this.val(4, 'B' + r); if (typeof d === 'number' && typeof v === 'number') closed.push({ d, v }); }
+      S.inv.closed = closed.sort((a, b) => a.d - b.d); S.inv.dirty = false;
+    }
     const before = JSON.stringify(S.inv);
     if (!S.inv) {
       const closed = [];
@@ -275,7 +280,7 @@ export class LavoroBook {
         const a = this.bankName(0), b = this.bankName(1);
         return { ...x, labels: { ...x.labels, B: 'Entrate ' + a, C: 'Entrate ' + b, E: 'Uscite ' + a, F: 'Uscite ' + b } };
       }
-      if (i === 4 && x.t === 'list' && x.title === 'Storico settimanale') return { ...x, title: 'Patrimonio settimana per settimana' };
+      if (i === 4 && x.t === 'list' && x.title === 'Storico settimanale') return { ...x, title: 'Andamento investimenti' };
       if (i === 4 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 25, sortKey: true, years: true };
       if (i === 5 && x.t === 'list' && x.r1 === 3) return { ...x, r2: 18, sortKey: true, years: true };
       return x;
@@ -336,7 +341,10 @@ export class LavoroBook {
 
   check(raw) { this.eng.check(raw); }
 
-  put(i, a, v) { this.eng.set(this.D.sheets[i].name, a, v); this.st.ov[i + '|' + a] = v; }
+  put(i, a, v) {
+    this.eng.set(this.D.sheets[i].name, a, v); this.st.ov[i + '|' + a] = v;
+    if (i === 4 && /^[AB](5[2-9])$/.test(a) && this.st.snap.inv) this.st.snap.inv.dirty = true;     // l'utente ha scritto a mano una settimana passata
+  }
   setFmt(i, a, f) { this.D.sheets[i].fmt[a] = f; this.st.fm[i + '|' + a] = f; }
   commit() { this.syncWork(); this.trackPatrimonio(); this.onChange?.(this.st); }
   resetState() { this.st.ov = {}; this.st.fm = {}; this.st.cur = {}; this.onChange?.(this.st); }
