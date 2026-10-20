@@ -18,6 +18,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 const CFG_FILE = path.join(DATA_DIR, 'update.json');
 const API = process.env.UPDATE_API_BASE || 'https://api.github.com';
 const ZIPBASE = process.env.UPDATE_ZIP_BASE || 'https://codeload.github.com';
+const GITBASE = process.env.UPDATE_GIT_BASE || 'https://github.com';
 const EVERY_MS = Number(process.env.UPDATE_EVERY_MS) || 60 * 1000;
 
 /** Solo questi percorsi possono essere aggiornati (tutto il resto viene ignorato). */
@@ -25,7 +26,7 @@ const ALLOWED = [/^app\//, /^server\/src\//, /^server\/scripts\//, /^server\/pac
 
 let cfg = { repo: '', branch: 'main', sha: '', lastCheck: 0, lastError: '', lastApplied: 0 };
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')) }; } catch { /* prima volta */ }
-let busy = false, timer = null, etag = '';
+let busy = false, timer = null;
 
 function saveCfg() {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); fs.writeFileSync(CFG_FILE, JSON.stringify(cfg, null, 2)); } catch (e) { console.error('update.json:', e.message); }
@@ -83,19 +84,34 @@ async function apply(sha) {
   return r;
 }
 
+/**
+ * Ultima versione del ramo. Si chiede direttamente a git (stesso indirizzo che usa "git fetch"):
+ * e' sempre aggiornata e non ha limiti di richieste. L'API di GitHub, invece, tiene la risposta
+ * in memoria per un po' e ha un tetto orario: e' solo il ripiego.
+ */
+async function latestSha() {
+  try {
+    const r = await fetch(`${GITBASE}/${cfg.repo}.git/info/refs?service=git-upload-pack`, { headers: { 'User-Agent': 'git/2.43.0', 'Cache-Control': 'no-cache' } });
+    if (r.status === 404) throw new Error('Repository non trovato (deve essere pubblico e il nome scritto come utente/nome)');
+    if (r.ok) {
+      const m = new RegExp('([0-9a-f]{40}) refs/heads/' + cfg.branch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').exec(await r.text());
+      if (m) return m[1];
+    }
+  } catch (e) { if (/Repository non trovato/.test(e.message)) throw e; /* rete: provo col ripiego */ }
+  const res = await fetch(`${API}/repos/${cfg.repo}/commits/${cfg.branch}`, { headers: { 'User-Agent': 'daily-mate', Accept: 'application/vnd.github+json', 'Cache-Control': 'no-cache' } });
+  if (res.status === 404) throw new Error('Repository non trovato (deve essere pubblico e il nome scritto come utente/nome)');
+  if (res.status === 403 || res.status === 429) throw new Error('GitHub ha limitato le richieste, riprovo piu\' tardi');
+  if (!res.ok) throw new Error(`GitHub ha risposto ${res.status}`);
+  return (await res.json()).sha;
+}
+
 /** Controlla GitHub e, se c'e' una versione nuova, la installa. */
 export async function check() {
   if (busy || !cfg.repo) return status();
   busy = true;
   try {
-    const res = await fetch(`${API}/repos/${cfg.repo}/commits/${cfg.branch}`, { headers: { 'User-Agent': 'daily-mate', Accept: 'application/vnd.github+json', ...(etag && cfg.sha ? { 'If-None-Match': etag } : {}) } });
-    if (res.status === 304) { cfg.lastError = ''; cfg.lastCheck = Date.now(); saveCfg(); busy = false; return status(); }   // nessuna novita': non conta nel limite di GitHub
-    if (res.status === 404) throw new Error('Repository non trovato (deve essere pubblico e il nome scritto come utente/nome)');
-    if (res.status === 403 || res.status === 429) throw new Error('GitHub ha limitato le richieste, riprovo piu\' tardi');
-    if (!res.ok) throw new Error(`GitHub ha risposto ${res.status}`);
-    const sha = (await res.json()).sha;
+    const sha = await latestSha();
     if (sha && sha !== cfg.sha) await apply(sha);
-    etag = res.headers.get('etag') || '';
     cfg.lastError = '';
   } catch (e) { cfg.lastError = e.message || String(e); console.error('Aggiornamento:', cfg.lastError); }
   cfg.lastCheck = Date.now(); saveCfg(); busy = false;
