@@ -116,8 +116,7 @@ export class SheetView extends Component {
   }
 
   #hero(x) {
-    const name = this.book.app?.displayName?.() || '';
-    const txt = this.i === 0 && name ? `Ciao ${name}` : this.disp(x.ta);
+    const txt = this.i === 0 ? this.title : this.disp(x.ta);   // Patrimonio: niente saluto (c'e' gia' nella Home)
     const id = this.reg({ f: [x.ta], lab: { [x.ta]: 'Titolo' } });
     return `<div class="hero" data-k="${id}"><h1>${esc(txt)}</h1></div>`;
   }

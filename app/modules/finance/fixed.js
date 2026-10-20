@@ -119,3 +119,9 @@ export function undo(book, id) {
   S.log = S.log.filter(x => x.id !== id);
   book.commit();
 }
+
+/** Scadenze ancora da pagare in un mese (da oggi, se e' il mese corrente). */
+export function inMonth(book, y, m, now = new Date()) {
+  const today = serialOf(now), a = Math.max(today + 1, serialOf(new Date(y, m, 1))), z = serialOf(new Date(y, m + 1, 0));
+  return scan(book, now).filter(x => x.due >= a && x.due <= z).sort((a, b) => a.due - b.due);
+}
