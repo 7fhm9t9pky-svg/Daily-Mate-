@@ -58,7 +58,7 @@ export class FinanceModule extends Module {
     const seed = await res.json();
     const saved = await this.app.storage.get(STATE_KEY);
     this._book = new LavoroBook(seed, saved, st => this.#save(st));
-    this._book.app = this.app; this._book.syncWork();
+    this._book.app = this.app; this._book.syncWork(); this._book.trackPatrimonio();
     return this._book;
   }
 
@@ -77,7 +77,7 @@ export class FinanceModule extends Module {
   #flush() {
     const st = this._pending; if (!st) return;
     this._pending = null; clearTimeout(this._timer);
-    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg, cur: st.cur });
+    this.app.storage.set(STATE_KEY, { ov: st.ov, fm: st.fm, jobs: st.jobs, exp: st.exp, custom: st.custom, work: st.work, wealth: st.wealth, cfg: st.cfg, cur: st.cur, snap: st.snap });
   }
 
   async getView(arg) {

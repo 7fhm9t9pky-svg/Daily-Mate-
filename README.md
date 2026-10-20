@@ -234,3 +234,6 @@ Agenda = Calendario | Scadenze (Avvisi). Archivio = Documenti | Note | Contatti 
 
 ## Ibrido fase 2
 Documenti: testo scritto nell'app (scaricabile in .txt), foto (ridotte) e PDF allegati, etichette di scadenza e filtri. Home: riga di aggiunta veloce (Evento, Scadenza, Nota, Documento, Contatto) e riquadro Prospettiva. Finanze: Panoramica | Movimenti | Conti e card del mese. Titoli grandi con riga grigia.
+
+## Patrimonio nel tempo automatico
+La casella del mese corrente e quella dell'anno corrente (es. 2026) seguono il patrimonio totale. Passato il mese/anno, l'ultimo valore resta fisso e si parte col successivo. Il valore fissato è quello dell'ultima volta che l'app è stata aperta o modificata.

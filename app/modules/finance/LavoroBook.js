@@ -36,6 +36,7 @@ export class LavoroBook {
       work: Object.assign({ jobs: [], adv: [], owed: [] }, saved?.work || {}),   // "Ore lavoro" degli utenti                              // pagine create dall'utente con il tasto +
       cfg: Object.assign({ banks: null, rate: '' }, saved?.cfg),                  // Configurazione: banche, paga standard
       wealth: Object.assign({ base: 'EUR', items: [], credits: [], ov: {} }, saved?.wealth),     // "Patrimonio" degli utenti
+      snap: Object.assign({ m: {}, y: {}, last: null }, saved?.snap || {}),       // patrimonio mese per mese / anno per anno (si ferma da solo quando il periodo finisce)
       exp: Object.assign({ sel: { switch: true, cantiere: true }, from: '', to: '' }, saved?.exp || {})
     };
     migratePays(this.st.work, this.st.cfg.rate);                    // paghe nominate per lavoro
@@ -117,6 +118,40 @@ export class LavoroBook {
     const w = convert(workTotals(this.st.work).totale, 'EUR', base, this.rates, this.st.wealth.ov) ?? 0;
     T.work = w; T.receivable = T.credits + w; T.total += T.receivable;
     return T;
+  }
+
+  /**
+   * "Patrimonio nel tempo": la casella del mese corrente e quella dell'anno corrente seguono il patrimonio totale.
+   * Quando il mese (o l'anno) finisce, l'ultimo valore resta fisso e si passa al successivo.
+   * Il valore e' quello dell'ultima volta che l'app e' stata aperta o modificata (i dati cambiano solo allora).
+   */
+  trackPatrimonio(now = new Date()) {
+    const run = () => {
+      const S = this.st.snap, sh = this.D.sheets[4]; if (!sh) return;
+      let live = this.useWealth() ? this.wealthTotals('EUR').total : this.num(0, 'A6');
+      if (typeof live !== 'number' || !isFinite(live)) return;
+      live = Math.round(live * 100) / 100;
+      const Y = now.getFullYear(), M = now.getMonth(), ym = Y + '-' + String(M + 1).padStart(2, '0');
+      const before = JSON.stringify([S.m, S.y, S.last && [S.last.ym, S.last.v]]);
+      if (S.last) {   // mesi/anni trascorsi dall'ultima volta: restano fermi all'ultimo valore noto
+        let [ly, lm] = S.last.ym.split('-').map(Number);
+        while (ly * 12 + lm < Y * 12 + M + 1 - 1) { lm++; if (lm > 12) { lm = 1; ly++; } const k = ly + '-' + String(lm).padStart(2, '0'); if (k < ym && S.m[k] == null) S.m[k] = S.last.v; }
+        for (let y = Number(S.last.ym.slice(0, 4)); y < Y; y++) if (S.y[y] == null) S.y[y] = S.last.v;
+      }
+      S.m[ym] = live; S.y[Y] = live; S.last = { ym, v: live };
+      if (JSON.stringify([S.m, S.y, [S.last.ym, S.last.v]]) !== before) this.onChange?.(this.st);
+      // scrive nelle caselle (mesi dell'anno corrente e riga dell'anno)
+      for (let m = 0; m < 12; m++) {
+        const v = S.m[Y + '-' + String(m + 1).padStart(2, '0')], a = 'B' + (29 + m);
+        if (v != null && (m === M || this.st.ov['4|' + a] === undefined)) this.eng.set(sh.name, a, v);
+      }
+      for (let r = 3; r <= 25; r++) {
+        const yr = this.val(4, 'A' + r);
+        if (typeof yr === 'number' && S.y[yr] != null && (yr === Y || this.st.ov['4|B' + r] === undefined)) this.eng.set(sh.name, 'B' + r, S.y[yr]);
+      }
+    };
+    if (this.useWealth()) return this.loadRates().then(run).catch(() => {});
+    run(); return Promise.resolve();
   }
 
   /** L'amministratore col nuovo sistema ore: "Paga da ricevere" del Patrimonio usa le ore nuove (non piu' la scheda originale). */
@@ -270,6 +305,6 @@ export class LavoroBook {
 
   put(i, a, v) { this.eng.set(this.D.sheets[i].name, a, v); this.st.ov[i + '|' + a] = v; }
   setFmt(i, a, f) { this.D.sheets[i].fmt[a] = f; this.st.fm[i + '|' + a] = f; }
-  commit() { this.syncWork(); this.onChange?.(this.st); }
+  commit() { this.syncWork(); this.trackPatrimonio(); this.onChange?.(this.st); }
   resetState() { this.st.ov = {}; this.st.fm = {}; this.st.cur = {}; this.onChange?.(this.st); }
 }
