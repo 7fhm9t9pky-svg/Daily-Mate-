@@ -260,3 +260,4 @@ Privacy: all'assistente vanno solo i messaggi della chat, la data di oggi, il no
 La barra in basso è stata tolta: si naviga dal menu ☰ (restano i selettori in alto, es. Calendario | Scadenze).
 
 Calendario: si apre sulla vista Mese; premendo Giorno (oggi) scorre sulla barra rossa dell'ora corrente.
+Resoconto spese fisse: ogni pagamento ha anche 'Cambia banca' (rimette i soldi sulla vecchia e li toglie dalla nuova).

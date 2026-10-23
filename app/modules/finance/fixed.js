@@ -125,3 +125,13 @@ export function inMonth(book, y, m, now = new Date()) {
   const today = serialOf(now), a = Math.max(today + 1, serialOf(new Date(y, m, 1))), z = serialOf(new Date(y, m + 1, 0));
   return scan(book, now).filter(x => x.due >= a && x.due <= z).sort((a, b) => a.due - b.due);
 }
+
+/** Cambia la banca di un pagamento gia' registrato: rimette i soldi sulla vecchia e li toglie dalla nuova (target vuoto = non scalare). */
+export async function changeBank(book, id, target) {
+  const S = state(book), e = S.log.find(x => x.id === id); if (!e) return;
+  await book.loadRates?.();
+  const rf = target ? deduct(book, target, e.amount) : null;      // prima la nuova: se manca qualcosa non si tocca nulla
+  refund(book, e.rf, e.amount);
+  e.rf = rf; e.deducted = !!rf; e.bank = target ? targets(book).find(t => t.id === target)?.label || '' : '';
+  book.commit();
+}
