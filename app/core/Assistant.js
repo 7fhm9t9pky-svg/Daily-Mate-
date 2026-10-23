@@ -58,13 +58,18 @@ export class Assistant {
     box.hidden = !!st.enabled;
     this.panel.querySelector('.ai-form').hidden = !st.enabled;
     if (st.enabled) return;
+    const P = st.providers || [];
     box.innerHTML = st.owner
-      ? `<p><b>L'assistente non è ancora attivo.</b> Serve una chiave di Anthropic (la crei su console.anthropic.com → API keys). Incollala qui: resta salvata solo sul tuo PC.</p>
-         <input type="password" placeholder="sk-ant-…" autocomplete="off" id="ai-key"><button class="btn primary" data-save="1">Attiva</button><em class="xmsg" id="ai-m"></em>`
+      ? `<p><b>L'assistente non è ancora attivo.</b> Scegli un servizio (il primo è gratuito, senza carta di credito) e incolla la chiave: resta salvata solo sul tuo PC.</p>
+         <select id="ai-prov">${P.map(x => `<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}</select>
+         <p class="ai-help" id="ai-help"></p>
+         <input type="password" placeholder="Incolla qui la chiave" autocomplete="off" id="ai-key"><button class="btn primary" data-save="1">Attiva</button><em class="xmsg" id="ai-m"></em>`
       : `<p><b>L'assistente non è ancora attivo.</b> Chiedi all'amministratore di attivarlo.</p>`;
+    const sel = box.querySelector('#ai-prov');
+    if (sel) { const h = () => { box.querySelector('#ai-help').textContent = 'Dove trovare la chiave: ' + (P.find(x => x.id === sel.value)?.help || ''); }; sel.onchange = h; h(); }
     box.querySelector('[data-save]')?.addEventListener('click', async () => {
       const k = box.querySelector('#ai-key').value.trim(); if (!k) return;
-      try { this.status = await this.app.auth.api('/api/assistant/config', { method: 'PUT', body: JSON.stringify({ apiKey: k }) }); this.setup(); this.draw(); }
+      try { this.status = await this.app.auth.api('/api/assistant/config', { method: 'PUT', body: JSON.stringify({ provider: sel.value, apiKey: k }) }); this.setup(); this.draw(); }
       catch (e) { box.querySelector('#ai-m').textContent = e.message; }
     });
   }

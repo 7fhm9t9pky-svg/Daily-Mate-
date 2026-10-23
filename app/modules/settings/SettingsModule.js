@@ -70,8 +70,11 @@ class SettingsView extends Component {
       <div class="set-block" id="set-ai" hidden>
         <h3>Assistente virtuale</h3>
         <p class="set-note" id="ai-st"></p>
-        <label class="fl"><span>Chiave Anthropic (resta solo sul tuo PC)</span><input id="ai-key2" type="password" placeholder="sk-ant-… (lascia vuoto per non cambiarla)" autocomplete="off"></label>
-        <label class="fl"><span>Modello</span><input id="ai-model" type="text" autocomplete="off"></label>
+        <div id="ai-act"></div>
+        <label class="fl"><span>Servizio da aggiungere o cambiare</span><select id="ai-prov2"></select></label>
+        <p class="set-note" id="ai-help2"></p>
+        <label class="fl"><span>Chiave (resta solo sul tuo PC)</span><input id="ai-key2" type="password" placeholder="Incolla qui la chiave" autocomplete="off"></label>
+        <label class="fl"><span>Modello (lascia com'è se non sai)</span><input id="ai-model" type="text" autocomplete="off"></label>
         <div class="set-line"><button class="btn primary" id="ai-save">Salva</button></div>
         <em id="ai-msg" class="xmsg"></em>
         <h3 style="margin-top:14px">Richieste degli utenti</h3><div id="ai-reqs"></div>
@@ -167,19 +170,24 @@ class SettingsView extends Component {
       if (!app.isOwner?.()) return;
       const box = body.querySelector('#set-ai'); if (!box) return;
       const api = (u, o) => app.auth.api(u, o);
+      let ST = null;
       const draw = async () => {
-        const st = await api('/api/assistant/status'); box.hidden = false;
-        body.querySelector('#ai-st').textContent = st.enabled ? 'Attivo: gli utenti vedono il pulsante ✨ e possono chiedere aiuto. Ogni domanda usa un po\' del tuo credito Anthropic.' : 'Non ancora attivo: incolla la chiave per accenderlo.';
-        body.querySelector('#ai-model').value = st.model || '';
+        const st = ST = await api('/api/assistant/status'); box.hidden = false;
+        body.querySelector('#ai-st').textContent = st.enabled ? 'Attivo: gli utenti vedono il pulsante ✨. Se un servizio finisce il limite del giorno, passa da solo al successivo.' : 'Non ancora attivo: scegli un servizio gratuito e incolla la chiave.';
+        body.querySelector('#ai-act').innerHTML = st.providers.filter(x => x.configured).map(x => `<div class="set-line"><span>✅ ${esc(x.label)} · <small>${esc(x.model)}</small></span><button class="btn" data-off="${x.id}">Togli</button></div>`).join('');
+        const sel = body.querySelector('#ai-prov2'), keep = sel.value;
+        sel.innerHTML = st.providers.map(x => `<option value="${x.id}">${esc(x.label)}${x.configured ? ' ✓' : ''}</option>`).join(''); if (keep) sel.value = keep;
+        const sync = () => { const p = st.providers.find(x => x.id === sel.value); body.querySelector('#ai-help2').textContent = 'Dove trovare la chiave: ' + (p?.help || ''); body.querySelector('#ai-model').value = p?.model || ''; };
+        sel.onchange = sync; sync();
         const { requests } = await api('/api/assistant/requests');
         body.querySelector('#ai-reqs').innerHTML = requests.length ? requests.slice().reverse().map(r => `<div class="set-line"><span><b>${esc(r.user)}</b> · ${new Date(r.at).toLocaleDateString('it-IT')}<br>${esc(r.text)}</span><button class="btn" data-del="${r.id}">Fatto</button></div>`).join('') : '<p class="set-note">Nessuna richiesta.</p>';
       };
       try { await draw(); } catch { return; }
       body.querySelector('#ai-save').onclick = async () => {
         const msg = body.querySelector('#ai-msg'), k = body.querySelector('#ai-key2').value.trim();
-        try { await api('/api/assistant/config', { method: 'PUT', body: JSON.stringify({ ...(k ? { apiKey: k } : {}), model: body.querySelector('#ai-model').value }) }); body.querySelector('#ai-key2').value = ''; msg.textContent = 'Salvato'; await draw(); } catch (e) { msg.textContent = '⚠ ' + e.message; }
+        try { await api('/api/assistant/config', { method: 'PUT', body: JSON.stringify({ provider: body.querySelector('#ai-prov2').value, ...(k ? { apiKey: k } : {}), model: body.querySelector('#ai-model').value }) }); body.querySelector('#ai-key2').value = ''; msg.textContent = 'Salvato'; await draw(); } catch (e) { msg.textContent = '⚠ ' + e.message; }
       };
-      box.addEventListener('click', async e => { const d = e.target.closest('[data-del]'); if (d) { await api('/api/assistant/requests/' + d.dataset.del, { method: 'DELETE' }); draw(); } });
+      box.addEventListener('click', async e => { const o = e.target.closest('[data-off]'); if (o && confirm('Tolgo questo servizio?')) { await api('/api/assistant/config', { method: 'PUT', body: JSON.stringify({ provider: o.dataset.off, apiKey: '' }) }); return draw(); } const d = e.target.closest('[data-del]'); if (d) { await api('/api/assistant/requests/' + d.dataset.del, { method: 'DELETE' }); draw(); } });
     })();
     body.querySelector('#set-logout')?.addEventListener('click', () => { app.auth.logout(); location.reload(); });
   }

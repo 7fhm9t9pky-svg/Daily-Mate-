@@ -459,3 +459,5 @@ body.no-tabs .ai-btn{bottom:calc(88px + env(safe-area-inset-bottom,0px))}
 .fab{bottom:calc(18px + env(safe-area-inset-bottom,0px))}
 .ai-btn,body.no-tabs .ai-btn{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 @media(min-width:900px){.fab{bottom:24px}.ai-btn,body.no-tabs .ai-btn{bottom:92px}}
+.ai-setup select{width:100%;padding:10px;border:1.5px solid var(--ln);border-radius:12px;margin:6px 0;background:var(--pa);color:var(--ink);font:inherit}
+.ai-help{font-size:12.5px;color:var(--mu);margin:2px 0 6px}
