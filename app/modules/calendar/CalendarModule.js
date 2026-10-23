@@ -16,7 +16,7 @@ const timeLabel = e => e.allDay ? 'Tutto il giorno' : `${e.start}${e.end ? ' –
 
 /** Calendario con tre viste: giornata a ore, settimana (elenco dei 7 giorni) e mese (griglia con i colori). */
 class CalendarView extends Component {
-  constructor(module) { super(); this.m = module; this.date = todayIso(); this.mode = 'day'; }
+  constructor(module) { super(); this.m = module; this.date = todayIso(); this.mode = 'month'; }
 
   render() {
     const el = document.createElement('section');
@@ -124,8 +124,10 @@ class CalendarView extends Component {
     }
     if (scroll) {
       const sc = this.el.closest('.app-main');
-      const target = evs.length ? evs[0].s / 60 : isToday ? Math.max(now.getHours() - 1, 0) : 7;
-      if (sc) sc.scrollTop = Math.max(target * HH - 40, 0);
+      if (sc) {
+        if (isToday) { const line = dayEl.querySelector('.now-line'); sc.scrollTop = Math.max(dayEl.offsetTop + line.offsetTop - 160, 0); }   // oggi: si apre sulla barra rossa (ora corrente)
+        else sc.scrollTop = Math.max((evs.length ? evs[0].s / 60 : 7) * HH - 40, 0);
+      }
     }
   }
 

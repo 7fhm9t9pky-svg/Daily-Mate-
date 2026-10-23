@@ -258,3 +258,5 @@ Serve la chiave di un servizio: Google Gemini, Groq, OpenRouter (gratuiti, senza
 Privacy: all'assistente vanno solo i messaggi della chat, la data di oggi, il nome e la pagina aperta; i dati salvati non vengono letti se non quando l'assistente chiede l'elenco delle pagine/conti (solo i nomi, mai gli importi).
 
 La barra in basso è stata tolta: si naviga dal menu ☰ (restano i selettori in alto, es. Calendario | Scadenze).
+
+Calendario: si apre sulla vista Mese; premendo Giorno (oggi) scorre sulla barra rossa dell'ora corrente.
