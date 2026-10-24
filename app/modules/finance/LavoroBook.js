@@ -105,7 +105,7 @@ export class LavoroBook {
 
   /** Cambi delle valute dal server (una volta sola per sessione). */
   loadRates() {
-    this._rates ||= this.app.auth.api('/api/rates').then(r => (this.rates = r)).catch(() => { this._rates = null; return null; });
+    this._rates ||= this.app.auth.cachedJson('/api/rates').then(r => (this.rates = r)).catch(() => { this._rates = null; return null; });
     return this._rates;
   }
 

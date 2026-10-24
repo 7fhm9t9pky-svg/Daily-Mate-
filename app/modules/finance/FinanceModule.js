@@ -54,10 +54,8 @@ export class FinanceModule extends Module {
   }
 
   async #load() {
-    const headers = this.app.auth?.token ? { Authorization: `Bearer ${this.app.auth.token}` } : {};
-    const res = await fetch('/api/seed/lavoro', { headers });
-    if (!res.ok) throw new Error('Impossibile caricare il foglio Finanze');
-    const seed = await res.json();
+    let seed;
+    try { seed = await this.app.auth.cachedJson('/api/seed/lavoro'); } catch { throw new Error('Impossibile caricare il foglio Finanze'); }
     const saved = await this.app.storage.get(STATE_KEY);
     this._book = new LavoroBook(seed, saved, st => this.#save(st));
     this._book.app = this.app; this._book.syncWork(); this._book.trackPatrimonio();

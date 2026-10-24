@@ -19,6 +19,13 @@ import { IdleLogout } from './core/IdleLogout.js';
 import { SettingsModule } from './modules/settings/SettingsModule.js';
 
 // Frontend e API sono serviti dallo stesso server (vedi /server): stessa origine, niente CORS.
+// Service worker: tiene una copia dell'app sul telefono, cosi' si apre anche a server spento.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(() => navigator.serviceWorker.ready).then(reg => {
+    const urls = performance.getEntriesByType('resource').map(r => r.name).filter(u => u.startsWith(location.origin) && !u.includes('/api/'));
+    reg.active?.postMessage({ cache: ['/', ...urls] });
+  }).catch(() => {});
+}
 const auth = new AuthClient();
 const gate = new AuthGate(auth, boot);
 gate.start();
@@ -42,6 +49,11 @@ function boot() {
   if (auth.user?.isAdmin) app.use(new AdminModule());   // visibile solo all'amministratore
 
   app.start();
+  if (auth.offline) {   // server spento: avviso ben visibile (la barra sparisce da sola quando si torna online)
+    const bar = document.createElement('div'); bar.className = 'update-bar idle-bar';
+    bar.innerHTML = '<span>📴 Modalità offline: le modifiche restano sul telefono e partono da sole quando il server torna acceso</span>';
+    document.body.appendChild(bar);
+  }
   new UpdateWatcher().start();
   app.assistant = new Assistant(app); app.assistant.mount();
   app.notifier = new Notifier(app);

@@ -261,3 +261,10 @@ La barra in basso è stata tolta: si naviga dal menu ☰ (restano i selettori in
 
 Calendario: si apre sulla vista Mese; premendo Giorno (oggi) scorre sulla barra rossa dell'ora corrente.
 Resoconto spese fisse: ogni pagamento ha anche 'Cambia banca' (rimette i soldi sulla vecchia e li toglie dalla nuova).
+
+
+## Uso offline (server spento)
+- L'app si apre anche a server spento: il telefono tiene una copia dell'app (service worker) e una copia **cifrata** dei tuoi dati (IndexedDB, chiave derivata dalla tua password con PBKDF2 + AES-GCM).
+- Serve aver fatto **almeno un accesso a server acceso** sullo stesso telefono. Poi, a server spento, accedi con la solita password e puoi leggere e modificare calendario, avvisi, note, documenti, contatti e Finanze.
+- Gruppi, chat, assistente e cambi cambi/valute live richiedono il server (si vede l'ultima copia dove disponibile).
+- Le modifiche fatte offline restano in coda (cifrate) e partono da sole quando il server torna acceso; la pagina si ricarica con i dati aggiornati. Se lo stesso dato viene cambiato da due dispositivi vince l'ultima modifica che arriva al server.
